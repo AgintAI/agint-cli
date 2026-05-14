@@ -4,7 +4,13 @@ A command-line interface (CLI) client for interacting with Agint.
 
 ## Installation
 
-You can install the package directly from GitHub using pip:
+Run the install script — it creates a virtual environment, installs the CLI, and prompts you for your API credentials:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/AgintAI/agint-cli/main/install.sh | bash
+```
+
+Or install manually with pip:
 
 ```bash
 pip install git+https://github.com/AgintAI/agint-cli.git
