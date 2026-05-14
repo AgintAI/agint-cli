@@ -37,7 +37,7 @@ TYPE_MAP = {
 
 VOLUME_PREFIX = "agitransfer://"
 CACHE_TTL = 180  # 3 minutes
-UPLOAD_CACHE_FILE
+UPLOAD_CACHE_FILE = ".docker_builder_upload_cache.json"
 
 # Directories to skip during upstream sync (virtualenvs, caches, build artifacts, etc.)
 UPLOAD_EXCLUDED_DIRS = {
