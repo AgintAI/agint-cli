@@ -39,6 +39,26 @@ VOLUME_PREFIX = "agitransfer://"
 CACHE_TTL = 180  # 3 minutes
 UPLOAD_CACHE_FILE = ".docker_builder_upload_cache.json"
 
+# Directories to skip during upstream sync (virtualenvs, caches, build artifacts, etc.)
+UPLOAD_EXCLUDED_DIRS = {
+    "__pycache__",
+    "node_modules",
+    ".tox",
+    ".nox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "dist",
+    "build",
+    "*.egg-info",
+    ".eggs",
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    ".cache",
+}
+
 # Module-level cache variables
 _spec_cache: Optional[Dict[str, Any]] = None
 _spec_cache_time: Optional[float] = None
@@ -433,13 +453,36 @@ def create_command_function(
         """Scans CWD, filters hidden files, checks cache, and uploads changes in parallel."""
         sync_endpoint = f"{api_url}/agitransfer/upload-file"
         cwd = Path.cwd()
+
+        # Safety check: ensure we're inside an agint project directory
+        if not any("agint" in part.lower() for part in cwd.parts):
+            typer.secho(
+                f"Error: Current directory ({cwd}) does not appear to be an agint project. "
+                "Expected to be inside a directory with 'agint' in its name. "
+                "Please cd into your agint project directory before running this command.",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         semaphore = asyncio.Semaphore(10)  # Limit concurrency
+        rate_limit_hit = asyncio.Event()  # Circuit breaker for 429 responses
 
         # Load the existing cache
         upload_cache = _load_upload_cache()
         new_upload_cache = {}  # Store results for the *new* cache
+
+        def _is_excluded_dir(name: str) -> bool:
+            """Check if a directory name matches any exclusion pattern."""
+            if name in UPLOAD_EXCLUDED_DIRS:
+                return True
+            # Handle wildcard patterns like *.egg-info
+            return any(
+                pat.startswith("*") and name.endswith(pat[1:])
+                for pat in UPLOAD_EXCLUDED_DIRS
+            )
 
         # @traceable # Inner functions might not be traceable correctly this way
         async def upload_item(
@@ -475,6 +518,14 @@ def create_command_function(
                     logger.debug(f"{action} file: {relative_path_str} -> {destination}")
 
                 async with semaphore:
+                    # Circuit breaker: skip if rate limit was hit by another task
+                    if rate_limit_hit.is_set():
+                        if os.getenv("DEBUG") == "1":
+                            logger.debug(
+                                f"Skipping {relative_path_str}: rate limit circuit breaker tripped"
+                            )
+                        return None
+
                     if os.getenv("DEBUG") == "1":
                         logger.debug(
                             f"Uploading JSON: {relative_path_str} (Semaphore acquired)"
@@ -506,6 +557,20 @@ def create_command_function(
                             )
                             # Avoid logging potentially large base64 content in response body debug
                             # logger.debug(f"Upload response body ({item_path.name}): {upload_resp.text}")
+
+                        # Check for 429 rate limiting — trip the circuit breaker
+                        if upload_resp.status_code == 429:
+                            rate_limit_hit.set()
+                            error_body = upload_resp.text
+                            try:
+                                error_body = json.dumps(upload_resp.json(), indent=2)
+                            except json.JSONDecodeError:
+                                pass
+                            logger.error(
+                                f"Rate limit hit uploading {item_path.name}: {error_body}. "
+                                "Stopping further uploads."
+                            )
+                            return None
 
                         # Check for 400/422 specifically
                         if upload_resp.status_code in [400, 422]:
@@ -563,31 +628,26 @@ def create_command_function(
         async def main_sync():
             tasks = []
             async with httpx.AsyncClient() as client:
-                for item in cwd.rglob("*"):
-                    # Check if any part of the path starts with '.'
-                    is_hidden = any(
-                        part.startswith(".") for part in item.relative_to(cwd).parts
-                    )
-                    # Also skip the cache file itself
-                    is_cache_file = item.resolve() == _upload_cache_file.resolve()
+                # Collect files, skipping hidden dirs, excluded dirs, and cache file
+                # Use os.walk for efficient directory pruning (avoids descending into excluded dirs)
+                for dirpath, dirnames, filenames in os.walk(cwd):
+                    rel_dir = Path(dirpath).relative_to(cwd)
 
-                    if is_hidden or is_cache_file:
-                        if (
-                            os.getenv("DEBUG") == "1" and not is_cache_file
-                        ):  # Don't log skipping cache file every time
-                            logger.debug(f"Skipping hidden item: {item}")
-                        continue
+                    # Prune hidden and excluded directories in-place to prevent descent
+                    dirnames[:] = [
+                        d for d in dirnames
+                        if not d.startswith(".") and not _is_excluded_dir(d)
+                    ]
 
-                    if item.is_file():
-                        # Pass the loaded cache to the upload_item task
+                    for filename in filenames:
+                        if filename.startswith("."):
+                            continue
+                        file_path = Path(dirpath) / filename
+                        if file_path.resolve() == _upload_cache_file.resolve():
+                            continue
                         tasks.append(
-                            asyncio.create_task(upload_item(item, client, upload_cache))
+                            asyncio.create_task(upload_item(file_path, client, upload_cache))
                         )
-                    elif item.is_dir():
-                        if os.getenv("DEBUG") == "1":
-                            logger.debug(
-                                f"Skipping directory (upload not implemented): {item}"
-                            )
 
                 if tasks:
                     if os.getenv("DEBUG") == "1":

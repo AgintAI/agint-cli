@@ -14,12 +14,14 @@ pip install git+https://github.com/AgintAI/agint-cli.git
 
 The client requires the following environment variables:
 
+- `DOCKER_BUILDER_API_URL`: The URL of your Agint instance
 - `AGINT_APIKEY`: Your Agint API key
 
-You can set these in a `.env` file in your working directory:
+You can set these in a `.env` file in your working directory or export them directly:
 
-```env
-AGINT_APIKEY=your_api_key_here
+```bash
+export DOCKER_BUILDER_API_URL=your-agint-instance
+export AGINT_APIKEY=your-api-key
 ```
 - Please reach out to accounts@agintai.com for an API Key if you are interested in our beta. 
 - The endpoint url is subject to changes as we iterate through our beta testing phase. 
