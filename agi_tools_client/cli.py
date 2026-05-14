@@ -37,7 +37,7 @@ TYPE_MAP = {
 
 VOLUME_PREFIX = "agitransfer://"
 CACHE_TTL = 180  # 3 minutes
-UPLOAD_CACHE_FILE = ".docker_builder_upload_cache.json"
+UPLOAD_CACHE_FILE
 
 # Directories to skip during upstream sync (virtualenvs, caches, build artifacts, etc.)
 UPLOAD_EXCLUDED_DIRS = {
@@ -61,6 +61,9 @@ UPLOAD_EXCLUDED_DIRS = {
 
 # Only sync files with these extensions (generated output types)
 UPLOAD_ALLOWED_EXTENSIONS = {".yaml", ".yml", ".py", ".flow", ".json", ".duckdb"}
+
+# Files to always skip during upload (e.g. spec files that shouldn't be synced)
+UPLOAD_EXCLUDED_FILES = {"openapi.json", UPLOAD_CACHE_FILE}
 
 # Max file size for large binary extensions (10 MB)
 UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024
@@ -649,9 +652,9 @@ def create_command_function(
                     for filename in filenames:
                         if filename.startswith("."):
                             continue
-                        file_path = Path(dirpath) / filename
-                        if file_path.resolve() == _upload_cache_file.resolve():
+                        if filename in UPLOAD_EXCLUDED_FILES:
                             continue
+                        file_path = Path(dirpath) / filename
                         if file_path.suffix not in UPLOAD_ALLOWED_EXTENSIONS:
                             if os.getenv("DEBUG") == "1":
                                 logger.debug(f"Skipping non-synced extension: {file_path}")

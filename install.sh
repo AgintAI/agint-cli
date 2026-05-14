@@ -22,10 +22,10 @@ echo ""
 echo "==> Configure your API credentials"
 echo ""
 
-read -rp "API URL [https://api.agintai.com]: " api_url
+read -rp "API URL [https://api.agintai.com]: " api_url </dev/tty
 api_url="${api_url:-https://api.agintai.com}"
 
-read -rp "API Key: " api_key
+read -rp "API Key: " api_key </dev/tty
 if [ -z "$api_key" ]; then
     echo "Warning: No API key provided. You can set AGINT_APIKEY later."
 fi
