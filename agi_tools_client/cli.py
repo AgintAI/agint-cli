@@ -59,6 +59,13 @@ UPLOAD_EXCLUDED_DIRS = {
     ".cache",
 }
 
+# Only sync files with these extensions (generated output types)
+UPLOAD_ALLOWED_EXTENSIONS = {".yaml", ".yml", ".py", ".flow", ".json", ".duckdb"}
+
+# Max file size for large binary extensions (10 MB)
+UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024
+UPLOAD_SIZE_LIMITED_EXTENSIONS = {".duckdb"}
+
 # Module-level cache variables
 _spec_cache: Optional[Dict[str, Any]] = None
 _spec_cache_time: Optional[float] = None
@@ -645,6 +652,25 @@ def create_command_function(
                         file_path = Path(dirpath) / filename
                         if file_path.resolve() == _upload_cache_file.resolve():
                             continue
+                        if file_path.suffix not in UPLOAD_ALLOWED_EXTENSIONS:
+                            if os.getenv("DEBUG") == "1":
+                                logger.debug(f"Skipping non-synced extension: {file_path}")
+                            continue
+                        if file_path.suffix in UPLOAD_SIZE_LIMITED_EXTENSIONS:
+                            try:
+                                fsize = file_path.stat().st_size
+                                if fsize > UPLOAD_MAX_SIZE_BYTES:
+                                    size_mb = fsize / (1024 * 1024)
+                                    limit_mb = UPLOAD_MAX_SIZE_BYTES / (1024 * 1024)
+                                    typer.secho(
+                                        f"Warning: Skipping {file_path.name} ({size_mb:.1f} MB) — "
+                                        f"exceeds {limit_mb:.0f} MB sync limit for {file_path.suffix} files.",
+                                        fg=typer.colors.YELLOW,
+                                        err=True,
+                                    )
+                                    continue
+                            except OSError:
+                                continue
                         tasks.append(
                             asyncio.create_task(upload_item(file_path, client, upload_cache))
                         )
