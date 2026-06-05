@@ -1,7 +1,7 @@
 import marimo
 
 __generated_with = "0.23.9"
-app = marimo.App(width="medium", app_title="Thin Client CLI Examples - WASM")
+app = marimo.App(width="full", app_title="Thin Client CLI Examples - WASM")
 
 
 @app.cell(hide_code=True)
@@ -9,6 +9,7 @@ def _():
     import base64
     import html
     import json
+    import re
     import sys
     import urllib.error
     import urllib.request
@@ -16,7 +17,7 @@ def _():
     import marimo as mo
 
     IS_WASM = "pyodide" in sys.modules
-    return IS_WASM, base64, html, json, mo, urllib
+    return IS_WASM, base64, html, json, mo, re, urllib
 
 
 @app.cell(hide_code=True)
@@ -114,7 +115,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, urllib):
+def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
     FILES = {}
 
     def command_block(command: str):
@@ -132,6 +133,35 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, urllib):
         except Exception:
             return value
 
+    def clean_terminal_output(text: str):
+        if not text:
+            return ""
+
+        # Strip ANSI/VT100 terminal controls while preserving plain ASCII art.
+        cleaned = text.replace("\r\n", "\n").replace("\r", "\n")
+        cleaned = re.sub(r"\x1b\][^\x07]*(?:\x07|\x1b\\)", "", cleaned)
+        cleaned = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", cleaned)
+        cleaned = re.sub(r"\x9b[0-?]*[ -/]*[@-~]", "", cleaned)
+        cleaned = re.sub(r"\x1b[@-Z\\-_]", "", cleaned)
+
+        # Some browser rendering drops ESC but leaves fragments like [34m.
+        cleaned = re.sub(r"\[\??[0-9;:]+[A-Za-z]", "", cleaned)
+
+        lines = []
+        seen_progress = {}
+        for line in cleaned.split("\n"):
+            stripped = line.rstrip()
+            progress_key = stripped.strip()
+            if progress_key.endswith("..."):
+                seen_progress[progress_key] = seen_progress.get(progress_key, 0) + 1
+                if seen_progress[progress_key] > 2:
+                    continue
+            if lines and lines[-1] == stripped and progress_key.endswith("..."):
+                continue
+            lines.append(stripped)
+
+        return "\n".join(lines).strip("\n")
+
     def preformatted(title: str, text: str, *, tone: str = "plain"):
         if not text:
             return None
@@ -148,11 +178,16 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, urllib):
               <pre style="
                 overflow-x: auto;
                 white-space: pre;
+                width: 100%;
+                max-width: calc(100vw - 3rem);
+                box-sizing: border-box;
                 border: 1px solid {border};
                 border-radius: 6px;
                 padding: 0.75rem;
                 background: #f6f8fa;
                 color: #24292f;
+                font-size: 0.875rem;
+                line-height: 1.3;
               ">{html.escape(text)}</pre>
             </section>
             """
@@ -168,8 +203,8 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, urllib):
             pieces.append(preformatted("HTTP error", response["http_error"], tone="error"))
             return mo.vstack([piece for piece in pieces if piece is not None])
 
-        stdout = response.get("stdout") or ""
-        stderr = decode_stderr(response.get("stderr"))
+        stdout = clean_terminal_output(response.get("stdout") or "")
+        stderr = clean_terminal_output(decode_stderr(response.get("stderr")))
         exit_code = response.get("exit_code")
 
         if output_name and stdout:
@@ -181,7 +216,8 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, urllib):
             pieces.append(mo.md("**Status:** success"))
 
         pieces.append(preformatted("stdout", stdout))
-        pieces.append(preformatted("stderr", stderr, tone="error"))
+        stderr_tone = "error" if exit_code not in (None, 0) else "plain"
+        pieces.append(preformatted("stderr / terminal output", stderr, tone=stderr_tone))
 
         if output_name and stdout:
             pieces.append(
