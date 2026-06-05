@@ -46,37 +46,25 @@ def _(mo):
         kind="password",
         full_width=True,
     )
-    run_schema_compose = mo.ui.checkbox(label="Run schemagin compose")
-    check_api_connection = mo.ui.checkbox(label="Check API connection")
-    run_schema_refine = mo.ui.checkbox(label="Run schemagin refine")
-    run_schema_visualize = mo.ui.checkbox(label="Run schemagin visualize")
-    run_datagin_synthesize = mo.ui.checkbox(label="Run datagin synthesize")
-    run_datagin_ingest = mo.ui.checkbox(label="Run datagin ingest")
-    run_datagin_stdin = mo.ui.checkbox(label="Run datagin stdin ingest")
-    run_dagify_compose = mo.ui.checkbox(label="Run dagify compose")
-    run_dagify_refine = mo.ui.checkbox(label="Run dagify refine")
-    run_dagify_resolve = mo.ui.checkbox(label="Run dagify resolve")
-    run_dagify_compile = mo.ui.checkbox(label="Run dagify compile")
-    run_dagent_execute = mo.ui.checkbox(label="Run dagent execute")
+    check_api_connection = mo.ui.run_button(label="Check API connection")
+    run_schema_compose = mo.ui.run_button(label="Run")
+    run_schema_refine = mo.ui.run_button(label="Run")
+    run_schema_visualize = mo.ui.run_button(label="Run")
+    run_datagin_synthesize = mo.ui.run_button(label="Run")
+    run_datagin_ingest = mo.ui.run_button(label="Run")
+    run_datagin_stdin = mo.ui.run_button(label="Run")
+    run_dagify_compose = mo.ui.run_button(label="Run")
+    run_dagify_refine = mo.ui.run_button(label="Run")
+    run_dagify_resolve = mo.ui.run_button(label="Run")
+    run_dagify_compile = mo.ui.run_button(label="Run")
+    run_dagent_execute = mo.ui.run_button(label="Run")
 
     mo.vstack(
         [
             mo.md("## Configuration"),
             api_base_url,
             agint_api_key,
-            check_api_connection,
-            mo.md("## Run Examples"),
-            run_schema_compose,
-            run_schema_refine,
-            run_schema_visualize,
-            run_datagin_synthesize,
-            run_datagin_ingest,
-            run_datagin_stdin,
-            run_dagify_compose,
-            run_dagify_refine,
-            run_dagify_resolve,
-            run_dagify_compile,
-            run_dagent_execute,
+            mo.md("## Examples"),
         ]
     )
     return (
@@ -129,7 +117,7 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
         if not isinstance(value, str):
             return str(value)
         try:
-            return base64.b64decode(value).decode("utf-8")
+            return base64.b64decode(value, validate=True).decode("utf-8")
         except Exception:
             return value
 
@@ -139,13 +127,20 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
 
         # Strip ANSI/VT100 terminal controls while preserving plain ASCII art.
         cleaned = text.replace("\r\n", "\n").replace("\r", "\n")
+        cleaned = (
+            cleaned.replace("\\x1b", "\x1b")
+            .replace("\\u001b", "\x1b")
+            .replace("\\033", "\x1b")
+            .replace("\\e", "\x1b")
+        )
         cleaned = re.sub(r"\x1b\][^\x07]*(?:\x07|\x1b\\)", "", cleaned)
         cleaned = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", cleaned)
         cleaned = re.sub(r"\x9b[0-?]*[ -/]*[@-~]", "", cleaned)
         cleaned = re.sub(r"\x1b[@-Z\\-_]", "", cleaned)
 
         # Some browser rendering drops ESC but leaves fragments like [34m.
-        cleaned = re.sub(r"\[\??[0-9;:]+[A-Za-z]", "", cleaned)
+        cleaned = re.sub(r"\[\??[0-9;:]+[ -/]*[@-~]", "", cleaned)
+        cleaned = re.sub(r"\[[0-9;:? ]{1,30}[A-Za-z]", "", cleaned)
 
         lines = []
         seen_progress = {}
@@ -161,6 +156,14 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
             lines.append(stripped)
 
         return "\n".join(lines).strip("\n")
+
+    def example_panel(run_button, command: str, response, *, output_name=None):
+        return mo.vstack(
+            [
+                run_button,
+                render_response(command, response, output_name=output_name),
+            ]
+        )
 
     def preformatted(title: str, text: str, *, tone: str = "plain"):
         if not text:
@@ -196,7 +199,7 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
     def render_response(command: str, response, *, output_name=None):
         pieces = [command_block(command)]
         if response is None:
-            pieces.append(mo.md("_Enable this example to run it._"))
+            pieces.append(mo.md("_Click **Run** to execute this example._"))
             return mo.vstack(pieces)
 
         if response.get("http_error"):
@@ -324,11 +327,11 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
         except Exception as error:
             return {"http_error": str(error)}
 
-    return FILES, agint_get, agint_post, render_response
+    return FILES, agint_get, agint_post, example_panel, render_response
 
 
 @app.cell(hide_code=True)
-async def _(agint_get, api_base_url, check_api_connection, mo, render_response):
+async def _(agint_get, api_base_url, check_api_connection, example_panel):
     connection_response = None
     if check_api_connection.value:
         connection_response = await agint_get("/openapi.json")
@@ -337,7 +340,8 @@ async def _(agint_get, api_base_url, check_api_connection, mo, render_response):
             connection_response = {
                 "stdout": f"Connected. OpenAPI schema loaded with {path_count} paths."
             }
-    render_response(
+    example_panel(
+        check_api_connection,
         f"curl {api_base_url.value.rstrip('/')}/openapi.json",
         connection_response,
     )
@@ -356,7 +360,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-async def _(agint_post, render_response, run_schema_compose):
+async def _(agint_post, example_panel, run_schema_compose):
     schema_compose_command = (
         'schemagin compose "A schema representing a hedge fund" '
         "--ascii --intelligence 5 > schema.yaml"
@@ -371,7 +375,8 @@ async def _(agint_post, render_response, run_schema_compose):
                 "intelligence": 5,
             },
         )
-    render_response(
+    example_panel(
+        run_schema_compose,
         schema_compose_command,
         schema_compose_response,
         output_name="schema.yaml",
@@ -380,7 +385,7 @@ async def _(agint_post, render_response, run_schema_compose):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_schema_refine):
+async def _(FILES, agint_post, example_panel, run_schema_refine):
     schema_refine_command = (
         'schemagin refine "Add soft-delete flags to all tables" '
         "--context schema.yaml --format=json > schema2.json"
@@ -395,7 +400,8 @@ async def _(FILES, agint_post, render_response, run_schema_refine):
                 "format": "json",
             },
         )
-    render_response(
+    example_panel(
+        run_schema_refine,
         schema_refine_command,
         schema_refine_response,
         output_name="schema2.json",
@@ -404,7 +410,7 @@ async def _(FILES, agint_post, render_response, run_schema_refine):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_schema_visualize):
+async def _(FILES, agint_post, example_panel, run_schema_visualize):
     schema_visualize_command = "schemagin visualize schema.yaml --ascii"
     schema_visualize_response = None
     if run_schema_visualize.value:
@@ -415,7 +421,7 @@ async def _(FILES, agint_post, render_response, run_schema_visualize):
                 "ascii": True,
             },
         )
-    render_response(schema_visualize_command, schema_visualize_response)
+    example_panel(run_schema_visualize, schema_visualize_command, schema_visualize_response)
     return (schema_visualize_response,)
 
 
@@ -430,7 +436,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_datagin_synthesize):
+async def _(FILES, agint_post, example_panel, run_datagin_synthesize):
     datagin_synthesize_command = (
         'datagin synthesize "Financial data for these tables" schema.yaml '
         "--output-agilink syntheticFinancials.duckdb --rows 5"
@@ -446,12 +452,16 @@ async def _(FILES, agint_post, render_response, run_datagin_synthesize):
                 "rows": 5,
             },
         )
-    render_response(datagin_synthesize_command, datagin_synthesize_response)
+    example_panel(
+        run_datagin_synthesize,
+        datagin_synthesize_command,
+        datagin_synthesize_response,
+    )
     return (datagin_synthesize_response,)
 
 
 @app.cell(hide_code=True)
-async def _(agint_post, render_response, run_datagin_ingest):
+async def _(agint_post, example_panel, run_datagin_ingest):
     datagin_ingest_command = (
         'printf \'%s\\n\' "name,email\\nAda Lovelace,ada@example.com" '
         "> messy_input_data.txt\n"
@@ -468,12 +478,12 @@ async def _(agint_post, render_response, run_datagin_ingest):
                 "output_agilink": "./local.duckdb",
             },
         )
-    render_response(datagin_ingest_command, datagin_ingest_response)
+    example_panel(run_datagin_ingest, datagin_ingest_command, datagin_ingest_response)
     return (datagin_ingest_response,)
 
 
 @app.cell(hide_code=True)
-async def _(agint_post, render_response, run_datagin_stdin):
+async def _(agint_post, example_panel, run_datagin_stdin):
     datagin_stdin_command = (
         'echo "Eleanor Patel increased investment to $10,000." > fund-note.txt\n'
         'cat fund-note.txt | datagin ingest "Extract financial data" - '
@@ -490,7 +500,7 @@ async def _(agint_post, render_response, run_datagin_stdin):
                 "output_agilink": "ingestedFinancials.duckdb",
             },
         )
-    render_response(datagin_stdin_command, datagin_stdin_response)
+    example_panel(run_datagin_stdin, datagin_stdin_command, datagin_stdin_response)
     return (datagin_stdin_response,)
 
 
@@ -506,7 +516,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-async def _(agint_post, render_response, run_dagify_compose):
+async def _(agint_post, example_panel, run_dagify_compose):
     dagify_compose_command = (
         'dagify compose "A workflow representing hedge fund due diligence" '
         "--ascii --intelligence 25 > hedgefund.flow"
@@ -521,7 +531,8 @@ async def _(agint_post, render_response, run_dagify_compose):
                 "intelligence": 25,
             },
         )
-    render_response(
+    example_panel(
+        run_dagify_compose,
         dagify_compose_command,
         dagify_compose_response,
         output_name="hedgefund.flow",
@@ -530,7 +541,7 @@ async def _(agint_post, render_response, run_dagify_compose):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_dagify_refine):
+async def _(FILES, agint_post, example_panel, run_dagify_refine):
     dagify_refine_command = (
         'dagify refine "Improve all nodes in this workflow" hedgefund.flow '
         "--ascii --intelligence 25 > improved.flow"
@@ -546,7 +557,8 @@ async def _(FILES, agint_post, render_response, run_dagify_refine):
                 "intelligence": 25,
             },
         )
-    render_response(
+    example_panel(
+        run_dagify_refine,
         dagify_refine_command,
         dagify_refine_response,
         output_name="improved.flow",
@@ -555,7 +567,7 @@ async def _(FILES, agint_post, render_response, run_dagify_refine):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_dagify_resolve):
+async def _(FILES, agint_post, example_panel, run_dagify_resolve):
     dagify_resolve_command = "dagify resolve improved.flow --ascii --intelligence 25"
     dagify_resolve_response = None
     if run_dagify_resolve.value:
@@ -567,12 +579,12 @@ async def _(FILES, agint_post, render_response, run_dagify_resolve):
                 "intelligence": 25,
             },
         )
-    render_response(dagify_resolve_command, dagify_resolve_response)
+    example_panel(run_dagify_resolve, dagify_resolve_command, dagify_resolve_response)
     return (dagify_resolve_response,)
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_dagify_compile):
+async def _(FILES, agint_post, example_panel, run_dagify_compile):
     dagify_compile_command = (
         "dagify compile improved.flow --type-floor pure "
         "--build-target crewai --intelligence 25"
@@ -588,7 +600,7 @@ async def _(FILES, agint_post, render_response, run_dagify_compile):
                 "intelligence": 25,
             },
         )
-    render_response(dagify_compile_command, dagify_compile_response)
+    example_panel(run_dagify_compile, dagify_compile_command, dagify_compile_response)
     return (dagify_compile_response,)
 
 
@@ -603,7 +615,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-async def _(FILES, agint_post, render_response, run_dagent_execute):
+async def _(FILES, agint_post, example_panel, run_dagent_execute):
     dagent_execute_command = (
         'cat hedgefund.flow | dagent execute - "Large cap stocks only" '
         "--intelligence 25"
@@ -619,7 +631,7 @@ async def _(FILES, agint_post, render_response, run_dagent_execute):
                 "intelligence": 25,
             },
         )
-    render_response(dagent_execute_command, dagent_execute_response)
+    example_panel(run_dagent_execute, dagent_execute_command, dagent_execute_response)
     return (dagent_execute_response,)
 
 
