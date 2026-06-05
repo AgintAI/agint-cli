@@ -9,6 +9,7 @@ PRESERVED_ENV_FILE=""
 BACKUP_DIR=""
 PYTHON_CMD=()
 VENV_ACTIVATE=""
+VENV_PYTHON=""
 
 # Cleanup on failure: remove partially created install files
 cleanup_on_failure() {
@@ -92,10 +93,17 @@ fi
 
 if [ -f "$INSTALL_DIR/.venv/bin/activate" ]; then
     VENV_ACTIVATE="$INSTALL_DIR/.venv/bin/activate"
+    VENV_PYTHON="$INSTALL_DIR/.venv/bin/python"
 elif [ -f "$INSTALL_DIR/.venv/Scripts/activate" ]; then
     VENV_ACTIVATE="$INSTALL_DIR/.venv/Scripts/activate"
+    VENV_PYTHON="$INSTALL_DIR/.venv/Scripts/python.exe"
 else
     echo "Error: could not find the virtual environment activation script." >&2
+    exit 1
+fi
+
+if [ ! -x "$VENV_PYTHON" ]; then
+    echo "Error: could not find the virtual environment Python executable." >&2
     exit 1
 fi
 
@@ -103,8 +111,8 @@ fi
 source "$VENV_ACTIVATE"
 
 # Install agint-cli from GitHub
-pip install --upgrade pip
-pip install "git+${REPO_URL}"
+"$VENV_PYTHON" -m pip install --upgrade pip
+"$VENV_PYTHON" -m pip install "git+${REPO_URL}"
 
 # Prompt for API configuration only when there was no preserved config
 if [ ! -f "$INSTALL_DIR/.env" ]; then
