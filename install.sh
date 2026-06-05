@@ -24,6 +24,22 @@ cleanup_on_failure() {
 }
 trap cleanup_on_failure EXIT
 
+sanitize_env_file() {
+    local env_file="$1"
+    local tmp_file
+
+    if [ ! -f "$env_file" ]; then
+        return
+    fi
+
+    tmp_file="$(mktemp)"
+    # Remove CR and non-printable ASCII control characters that can sneak in
+    # through copied terminal input and make httpx reject the API URL.
+    LC_ALL=C tr -d '\000-\010\013\014\016-\037\177' < "$env_file" > "$tmp_file"
+    mv "$tmp_file" "$env_file"
+    chmod 600 "$env_file" 2>/dev/null || true
+}
+
 # --- Prerequisite checks ---
 
 # Find a Python executable that behaves like CPython in command mode.
@@ -85,7 +101,7 @@ mkdir -p "$WORK_DIR"
 
 if [ -n "$PRESERVED_ENV_FILE" ]; then
     cp "$PRESERVED_ENV_FILE" "$INSTALL_DIR/.env"
-    chmod 600 "$INSTALL_DIR/.env" 2>/dev/null || true
+    sanitize_env_file "$INSTALL_DIR/.env"
 fi
 
 # Create and activate a virtual environment
@@ -141,9 +157,11 @@ DOCKER_BUILDER_API_URL=${api_url}
 AGINT_APIKEY=${api_key}
 EOF
     )
+    sanitize_env_file "$INSTALL_DIR/.env"
 else
     echo ""
     echo "==> Reusing existing API credentials from $INSTALL_DIR/.env"
+    sanitize_env_file "$INSTALL_DIR/.env"
 fi
 
 ln -sf "$INSTALL_DIR/.env" "$WORK_DIR/.env" 2>/dev/null || cp "$INSTALL_DIR/.env" "$WORK_DIR/.env"
