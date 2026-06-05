@@ -21,6 +21,10 @@ source ~/agint/.venv/bin/activate
 cd ~/agint/work
 ```
 
+On Windows Git Bash, the activation path is usually
+`~/agint/.venv/Scripts/activate`; the installer prints the exact command for
+your environment.
+
 Run `exit` to return to your previous shell.
 
 If you rerun the installer, it preserves `~/agint/.env`, moves the old install

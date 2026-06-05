@@ -7,6 +7,8 @@ REPO_URL="https://github.com/AgintAI/agint-cli.git"
 MIN_PYTHON_VERSION="3.8"
 PRESERVED_ENV_FILE=""
 BACKUP_DIR=""
+PYTHON_CMD=()
+VENV_ACTIVATE=""
 
 # Cleanup on failure: remove partially created install files
 cleanup_on_failure() {
@@ -23,15 +25,23 @@ trap cleanup_on_failure EXIT
 
 # --- Prerequisite checks ---
 
-# Check for python3
-if ! command -v python3 &>/dev/null; then
-    echo "Error: python3 is not installed. Please install Python ${MIN_PYTHON_VERSION}+ first." >&2
+# Find a Python executable that behaves like CPython in command mode.
+for candidate in python3 python "py -3" py; do
+    if version_output=$($candidate -c 'import sys; v=sys.version_info; print(str(v[0]) + "." + str(v[1]))' 2>/dev/null); then
+        PYTHON_CMD=($candidate)
+        python_version="$version_output"
+        break
+    fi
+done
+
+if [ "${#PYTHON_CMD[@]}" -eq 0 ]; then
+    echo "Error: could not find a usable Python ${MIN_PYTHON_VERSION}+ command." >&2
+    echo "Tried: python3, python, py -3, py" >&2
     exit 1
 fi
 
 # Check minimum Python version
-python_version=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-if python3 -c "import sys; exit(0 if sys.version_info >= (3, 8) else 1)" 2>/dev/null; then
+if "${PYTHON_CMD[@]}" -c "import sys; exit(0 if sys.version_info >= (3, 8) else 1)" 2>/dev/null; then
     : # version OK
 else
     echo "Error: Python ${MIN_PYTHON_VERSION}+ is required, but found ${python_version}." >&2
@@ -45,13 +55,13 @@ if ! command -v git &>/dev/null; then
 fi
 
 # Check for pip/venv module availability
-if ! python3 -c "import venv" 2>/dev/null; then
+if ! "${PYTHON_CMD[@]}" -c "import venv" 2>/dev/null; then
     echo "Error: Python venv module is not available. On Debian/Ubuntu, install it with:" >&2
     echo "  sudo apt install python3-venv" >&2
     exit 1
 fi
 
-echo "==> Installing agint-cli into $INSTALL_DIR (Python ${python_version})"
+echo "==> Installing agint-cli into $INSTALL_DIR (Python ${python_version}: ${PYTHON_CMD[*]})"
 
 # --- Handle existing installation ---
 
@@ -78,8 +88,19 @@ if [ -n "$PRESERVED_ENV_FILE" ]; then
 fi
 
 # Create and activate a virtual environment
-python3 -m venv "$INSTALL_DIR/.venv"
-source "$INSTALL_DIR/.venv/bin/activate"
+"${PYTHON_CMD[@]}" -m venv "$INSTALL_DIR/.venv"
+
+if [ -f "$INSTALL_DIR/.venv/bin/activate" ]; then
+    VENV_ACTIVATE="$INSTALL_DIR/.venv/bin/activate"
+elif [ -f "$INSTALL_DIR/.venv/Scripts/activate" ]; then
+    VENV_ACTIVATE="$INSTALL_DIR/.venv/Scripts/activate"
+else
+    echo "Error: could not find the virtual environment activation script." >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$VENV_ACTIVATE"
 
 # Install agint-cli from GitHub
 pip install --upgrade pip
@@ -132,7 +153,7 @@ echo "Default workspace created at $WORK_DIR"
 echo ""
 echo "To activate the environment and run commands from the workspace:"
 echo ""
-echo "  source $INSTALL_DIR/.venv/bin/activate"
+echo "  source $VENV_ACTIVATE"
 echo "  cd $WORK_DIR"
 echo ""
 echo "Available commands: dagify, dagent, schemagin, datagin, agicat, agiwrite"
@@ -144,7 +165,7 @@ if [[ "$enter_shell" =~ ^[Yy]$ ]]; then
     echo "==> Opening an activated shell in $WORK_DIR"
     echo "    Run 'exit' when you want to return to your previous shell."
     cd "$WORK_DIR"
-    # shellcheck disable=SC1091
-    source "$INSTALL_DIR/.venv/bin/activate"
+    # shellcheck disable=SC1090
+    source "$VENV_ACTIVATE"
     exec "${SHELL:-/bin/bash}" -i
 fi
