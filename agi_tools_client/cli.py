@@ -10,7 +10,7 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from dotenv import load_dotenv
 import httpx
@@ -75,6 +75,45 @@ _spec_cache_time: Optional[float] = None
 
 # Resolved cache file path
 _upload_cache_file = Path.cwd() / UPLOAD_CACHE_FILE
+
+
+def extract_property_metadata(prop_spec: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract generated CLI metadata from an OpenAPI property.
+
+    TODO: remove dual-shape support after generated specs standardize on one
+    Pydantic metadata representation.
+    """
+    return {
+        **prop_spec.get("openapi_extra", {}),
+        **{name: value for name, value in prop_spec.items() if name.startswith("x-")},
+    }
+
+
+def get_property_type_name(prop_spec: Dict[str, Any]) -> str:
+    """Return the preferred OpenAPI primitive type name for a property.
+
+    TODO: preserve richer item schemas when typed list elements become important.
+    """
+    type_info = prop_spec.get("type", "string")
+    if "anyOf" in prop_spec:
+        types = [
+            t.get("type")
+            for t in prop_spec["anyOf"]
+            if "type" in t and t.get("type") != "null"
+        ]
+        if types:
+            type_info = types[0]
+    return type_info
+
+
+def get_property_annotation(prop_spec: Dict[str, Any]) -> type:
+    """Return the Python type annotation for a generated Typer parameter.
+
+    TODO: infer list element types from OpenAPI `items` when needed.
+    """
+    if get_property_type_name(prop_spec) == "array":
+        return List[str]
+    return TYPE_MAP.get(get_property_type_name(prop_spec), str)
 
 
 # @traceable
@@ -192,24 +231,16 @@ def create_parameter(
     Create a Typer parameter (Argument or Option) based on the OpenAPI property spec.
     """
     # Extract metadata
-    metadata = prop_spec.get("openapi_extra", {})
+    metadata = extract_property_metadata(prop_spec)
     is_argument = metadata.get("x-is-argument", False)
     is_flag = metadata.get("x-is-flag", False)
     is_required = metadata.get("x-required", False)
     cli_name = metadata.get("x-cli-name", prop_name)  # Get the CLI name if specified
+    negative_cli_name = metadata.get("x-negative-cli-name")
 
     # Get basic properties
     description = prop_spec.get("description", "")
     default = prop_spec.get("default", None)
-
-    # Determine type
-    type_info = prop_spec.get("type", "string")
-    if "anyOf" in prop_spec:
-        types = [t.get("type") for t in prop_spec["anyOf"] if "type" in t]
-        if types:
-            type_info = types[0]
-
-    TYPE_MAP.get(type_info, str)
 
     if is_argument:
         return typer.Argument(
@@ -219,8 +250,13 @@ def create_parameter(
     else:
         # For options, handle flags and regular options
         if is_flag:
+            positive_name = f"--{cli_name.replace('_', '-')}"
+            flag_names = [positive_name]
+            if negative_cli_name:
+                flag_names.append(f"--{negative_cli_name.replace('_', '-')}")
             return typer.Option(
-                default=default if default is not None else False,
+                default if default is not None else False,
+                *flag_names,
                 help=description,
                 is_flag=True,
             )
@@ -955,7 +991,7 @@ def create_command_function(
                     prop_name,
                     kind=inspect.Parameter.KEYWORD_ONLY,
                     default=param_obj,
-                    annotation=TYPE_MAP.get(prop_spec.get("type", "string"), str),
+                    annotation=get_property_annotation(prop_spec),
                 )
             )
 
