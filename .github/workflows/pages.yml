@@ -28,6 +28,8 @@ jobs:
       - run: python -m pip install --upgrade marimo
       - run: marimo export html-wasm agint_cli_examples_wasm.py -o dist --mode run
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
