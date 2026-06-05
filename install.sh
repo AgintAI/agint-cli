@@ -40,6 +40,34 @@ sanitize_env_file() {
     chmod 600 "$env_file" 2>/dev/null || true
 }
 
+get_env_value() {
+    local env_file="$1"
+    local key="$2"
+
+    if [ ! -f "$env_file" ]; then
+        return
+    fi
+
+    awk -F= -v key="$key" '$1 == key {print substr($0, length(key) + 2); exit}' "$env_file"
+}
+
+mask_secret() {
+    local secret="$1"
+    local length="${#secret}"
+    local prefix
+    local suffix
+
+    if [ -z "$secret" ]; then
+        echo "not set"
+    elif [ "$length" -le 8 ]; then
+        echo "********"
+    else
+        prefix="$(printf '%s' "$secret" | cut -c 1-4)"
+        suffix="$(printf '%s' "$secret" | rev | cut -c 1-4 | rev)"
+        echo "${prefix}...${suffix}"
+    fi
+}
+
 # --- Prerequisite checks ---
 
 # Find a Python executable that behaves like CPython in command mode.
@@ -135,34 +163,38 @@ fi
 echo "==> Installing agint-cli package"
 "$VENV_PYTHON" -m pip install "git+${REPO_URL}"
 
-# Prompt for API configuration only when there was no preserved config
-if [ ! -f "$INSTALL_DIR/.env" ]; then
-    echo ""
-    echo "==> Configure your API credentials"
-    echo ""
+# Prompt for API configuration, using any preserved credentials as defaults.
+if [ -f "$INSTALL_DIR/.env" ]; then
+    sanitize_env_file "$INSTALL_DIR/.env"
+fi
 
-    read -rp "API URL [https://api.agintai.com]: " api_url </dev/tty
-    api_url="${api_url:-https://api.agintai.com}"
+existing_api_url="$(get_env_value "$INSTALL_DIR/.env" "DOCKER_BUILDER_API_URL")"
+existing_api_key="$(get_env_value "$INSTALL_DIR/.env" "AGINT_APIKEY")"
+default_api_url="${existing_api_url:-https://api.agintai.com}"
+masked_api_key="$(mask_secret "$existing_api_key")"
 
-    read -rp "API Key: " api_key </dev/tty
-    if [ -z "$api_key" ]; then
-        echo "Warning: No API key provided. You can set AGINT_APIKEY later."
-    fi
+echo ""
+echo "==> Configure your API credentials"
+echo ""
 
-    # Write .env file with restricted permissions
-    (
-        umask 077
-        cat > "$INSTALL_DIR/.env" <<EOF
+read -rp "API URL [$default_api_url]: " api_url </dev/tty
+api_url="${api_url:-$default_api_url}"
+
+read -rp "API Key [$masked_api_key]: " api_key </dev/tty
+api_key="${api_key:-$existing_api_key}"
+if [ -z "$api_key" ]; then
+    echo "Warning: No API key provided. You can set AGINT_APIKEY later."
+fi
+
+# Write .env file with restricted permissions
+(
+    umask 077
+    cat > "$INSTALL_DIR/.env" <<EOF
 DOCKER_BUILDER_API_URL=${api_url}
 AGINT_APIKEY=${api_key}
 EOF
-    )
-    sanitize_env_file "$INSTALL_DIR/.env"
-else
-    echo ""
-    echo "==> Reusing existing API credentials from $INSTALL_DIR/.env"
-    sanitize_env_file "$INSTALL_DIR/.env"
-fi
+)
+sanitize_env_file "$INSTALL_DIR/.env"
 
 ln -sf "$INSTALL_DIR/.env" "$WORK_DIR/.env" 2>/dev/null || cp "$INSTALL_DIR/.env" "$WORK_DIR/.env"
 chmod 600 "$WORK_DIR/.env" 2>/dev/null || true

@@ -4,100 +4,22 @@ A command-line interface (CLI) client for interacting with Agint.
 
 ## Installation
 
-Run the install script — it creates a virtual environment, installs the CLI,
-creates a default workspace, and prompts you for your API credentials:
+Recommended:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/AgintAI/agint-cli/main/install.sh | bash
 ```
 
-By default this installs into `~/agint`, stores credentials in `~/agint/.env`,
-and creates `~/agint/work` for running commands. At the end of the install, the
-script asks whether to open an activated shell in that workspace. If you answer
-yes, it runs the equivalent of:
-
-```bash
-source ~/agint/.venv/bin/activate
-cd ~/agint/work
-```
-
-On Windows Git Bash, the activation path is usually
-`~/agint/.venv/Scripts/activate`; the installer prints the exact command for
-your environment.
-
-Run `exit` to return to your previous shell.
-
-If you rerun the installer, it preserves `~/agint/.env`, moves the old install
-to a timestamped backup such as `~/agint.backup.20260605173000`, and creates a
-fresh install plus workspace.
-
-Or install manually with pip:
+Manual:
 
 ```bash
 pip install git+https://github.com/AgintAI/agint-cli.git
 ```
 
-## Configuration
+See [Appendix](#appendix) for credentials, reinstall behavior, and artifact sync
+details.
 
-The client requires the following environment variables:
-
-- `DOCKER_BUILDER_API_URL`: The URL of your Agint instance
-- `AGINT_APIKEY`: Your Agint API key
-
-You can set these in a `.env` file in your working directory or export them directly:
-
-```bash
-export DOCKER_BUILDER_API_URL=your-agint-instance
-export AGINT_APIKEY=your-api-key
-```
-- Please reach out to accounts@agintai.com for an API Key if you are interested in our beta. 
-- The endpoint url is subject to changes as we iterate through our beta testing phase. 
-
-## Usage
-
-- Please refer to `commands.md` to view the full manual for available commands
-
-### Artifact sync
-
-For generated-tool commands, the thin client keeps local generated artifacts and
-the remote `agitransfer://` workspace in sync:
-
-- before a command, selected local files in the current directory are uploaded to
-  the authenticated user's remote workspace;
-- after a successful command, the remote workspace is zipped and downloaded back
-  into the current directory.
-
-Run commands from a project/work directory, such as `~/agint/work`, instead of
-the install root. The curl installer creates that workspace for this purpose.
-
-The sync-enabled command groups are:
-
-```text
-agicat
-agiwrite
-dagify
-dagent
-schemagin
-datagin
-```
-
-When the server advertises the `agicat` and `agiwrite` OpenAPI groups, the thin
-client exposes direct `agicat` and `agiwrite` console commands. Older installs
-can use the parent command form, such as `agi-tools agicat ...` or
-`agi-tools agiwrite ...`.
-
-This supports common generated artifacts such as schemas, DAGs, diagrams,
-rendered outputs, DuckDB files, CSVs, Markdown, SQL, and source files. Synced
-extensions include:
-
-```text
-.csv .d2 .dbml .dot .duckdb .flow .html .json .md .pdf .png .py .sql .svg .txt .yaml .yml
-```
-
-Large binary/rendered artifacts such as `.duckdb`, `.pdf`, `.png`, and `.svg`
-are subject to a conservative size limit during upload.
-
-### Example commands
+## Examples
 
 ```bash
 # Analyze a stock
@@ -194,8 +116,7 @@ cat data.json \
 
 ## Marimo notebooks
 
-This repo includes marimo notebooks for trying the thin client examples locally
-or in a browser.
+Try the examples locally, in molab, or on GitHub Pages.
 
 ### Run locally
 
@@ -223,9 +144,8 @@ export AGINT_APIKEY=your-api-key
 marimo edit agint_cli_examples.py
 ```
 
-The local notebook also has configuration fields for API URL and API key. Opening
-it does not install or run anything automatically; use the notebook controls to
-choose which setup, sanity-check, or example cells to run.
+The local notebook has API URL/key fields and controls for setup, sanity checks,
+and examples.
 
 ### Run WASM locally
 
@@ -252,9 +172,60 @@ Try the WebAssembly browser notebook on GitHub Pages:
 
 [https://agintai.github.io/agint-cli/](https://agintai.github.io/agint-cli/)
 
-The local notebook runs the actual CLI commands. The WebAssembly notebook shows
-the same copyable CLI commands, then makes the equivalent AGInt API calls
-directly in the browser and renders stdout, stderr, ASCII output, and generated
-files. Browser execution requires the AGInt API to allow CORS requests from the
-GitHub Pages and molab origins. If the API is only available inside a VPN, users
-must run the browser notebook from a browser that can reach that endpoint.
+The local notebook runs real CLI commands. The WebAssembly notebook shows the
+same commands and calls the AGInt API directly in the browser.
+
+## Appendix
+
+### Credentials
+
+The client uses:
+
+```bash
+export DOCKER_BUILDER_API_URL=your-agint-instance
+export AGINT_APIKEY=your-api-key
+```
+
+The curl installer stores these in `~/agint/.env`. For beta API access, contact
+accounts@agintai.com.
+
+### Curl Installer
+
+The installer creates `~/agint/.venv` and `~/agint/work`. Run commands from a
+workspace such as `~/agint/work`, not the install root.
+
+After install, it can open an activated shell in the workspace. On Windows Git
+Bash, the activation path is usually `~/agint/.venv/Scripts/activate`; the
+installer prints the exact command.
+
+Rerunning the installer backs up the old install, shows preserved credentials as
+defaults, and lets Enter keep them or new input replace them.
+
+### Artifact Sync
+
+Generated-tool commands sync selected local artifacts with the remote
+`agitransfer://` workspace before and after command execution.
+
+Sync-enabled command groups:
+
+```text
+agicat
+agiwrite
+dagify
+dagent
+schemagin
+datagin
+```
+
+Synced extensions:
+
+```text
+.csv .d2 .dbml .dot .duckdb .flow .html .json .md .pdf .png .py .sql .svg .txt .yaml .yml
+```
+
+Large `.duckdb`, `.pdf`, `.png`, and `.svg` files have a conservative upload
+size limit.
+
+### Full Command Reference
+
+See `commands.md` for the generated command manual.
