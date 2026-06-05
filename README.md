@@ -36,6 +36,37 @@ export AGINT_APIKEY=your-api-key
 
 - Please refer to `commands.md` to view the full manual for available commands
 
+## Interactive examples
+
+This repo includes marimo notebooks for trying the thin client examples locally
+or in a browser.
+
+Run the local CLI notebook with marimo:
+
+```bash
+pip install marimo
+marimo edit agint_cli_examples.py
+```
+
+Open the local/server notebook in molab:
+
+[![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/AgintAI/agint-cli/blob/main/agint_cli_examples.py)
+
+Try the WebAssembly browser notebook on GitHub Pages:
+
+[https://agintai.github.io/agint-cli/](https://agintai.github.io/agint-cli/)
+
+Open the WebAssembly notebook in molab:
+
+[https://molab.marimo.io/github/AgintAI/agint-cli/blob/main/agint_cli_examples_wasm.py/wasm](https://molab.marimo.io/github/AgintAI/agint-cli/blob/main/agint_cli_examples_wasm.py/wasm)
+
+The local notebook runs the actual CLI commands. The WebAssembly notebook shows
+the same copyable CLI commands, then makes the equivalent AGInt API calls
+directly in the browser and renders stdout, stderr, ASCII output, and generated
+files. Browser execution requires the AGInt API to allow CORS requests from the
+GitHub Pages and molab origins. If the API is only available inside a VPN, users
+must run the browser notebook from a browser that can reach that endpoint.
+
 ```bash
 # Analyze a stock
 dagify compose "Analyze a stock using fundamental data" --ascii --intelligence 5
