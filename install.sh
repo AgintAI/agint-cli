@@ -111,7 +111,12 @@ fi
 source "$VENV_ACTIVATE"
 
 # Install agint-cli from GitHub
-"$VENV_PYTHON" -m pip install --upgrade pip
+echo "==> Upgrading pip if supported by this environment"
+if ! "$VENV_PYTHON" -m pip install --upgrade pip; then
+    echo "Warning: pip self-upgrade failed; continuing with the bundled venv pip." >&2
+fi
+
+echo "==> Installing agint-cli package"
 "$VENV_PYTHON" -m pip install "git+${REPO_URL}"
 
 # Prompt for API configuration only when there was no preserved config
