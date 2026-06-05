@@ -41,11 +41,39 @@ export AGINT_APIKEY=your-api-key
 This repo includes marimo notebooks for trying the thin client examples locally
 or in a browser.
 
-Run the local CLI notebook with marimo:
+Run the local CLI notebook with marimo from a project virtual environment:
 
 ```bash
-pip install marimo
+# Clone the repo if you do not already have it locally
+git clone https://github.com/AgintAI/agint-cli.git
+cd agint-cli
+
+# Create and activate a local virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install marimo and the thin client package
+python -m pip install --upgrade pip
+python -m pip install marimo
+python -m pip install -e .
+
+# Provide API credentials for live examples
+export DOCKER_BUILDER_API_URL=https://your-agint-api.example.com
+export AGINT_APIKEY=your-api-key
+
+# Open the local notebook
 marimo edit agint_cli_examples.py
+```
+
+The local notebook also has configuration fields for API URL and API key. Opening
+it does not install or run anything automatically; use the notebook controls to
+choose which setup, sanity-check, or example cells to run.
+
+To run the WebAssembly notebook locally with marimo instead of GitHub Pages:
+
+```bash
+source .venv/bin/activate
+marimo edit agint_cli_examples_wasm.py
 ```
 
 Open the local/server notebook in molab:
