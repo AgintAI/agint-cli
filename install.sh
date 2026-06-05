@@ -35,7 +35,7 @@ sanitize_env_file() {
     tmp_file="$(mktemp)"
     # Remove CR and non-printable ASCII control characters that can sneak in
     # through copied terminal input and make httpx reject the API URL.
-    LC_ALL=C tr -d '\000-\010\013\014\016-\037\177' < "$env_file" > "$tmp_file"
+    LC_ALL=C tr -d '\000-\010\013-\037\177' < "$env_file" > "$tmp_file"
     mv "$tmp_file" "$env_file"
     chmod 600 "$env_file" 2>/dev/null || true
 }
@@ -198,5 +198,5 @@ if [[ "$enter_shell" =~ ^[Yy]$ ]]; then
     cd "$WORK_DIR"
     # shellcheck disable=SC1090
     source "$VENV_ACTIVATE"
-    exec "${SHELL:-/bin/bash}" -i
+    exec "${SHELL:-/bin/bash}" -i </dev/tty
 fi
