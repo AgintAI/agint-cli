@@ -71,11 +71,16 @@ def _(browser_store_get, mo):
     )
     check_api_connection = mo.ui.run_button(label="Check API connection")
     run_schema_compose = mo.ui.run_button(label="Run")
+    run_schema_artifacts = mo.ui.run_button(label="Run")
     run_schema_refine = mo.ui.run_button(label="Run")
     run_schema_visualize = mo.ui.run_button(label="Run")
+    run_schema_visualize_artifacts = mo.ui.run_button(label="Run")
     run_datagin_synthesize = mo.ui.run_button(label="Run")
     run_datagin_ingest = mo.ui.run_button(label="Run")
     run_datagin_stdin = mo.ui.run_button(label="Run")
+    run_agiwrite_schema = mo.ui.run_button(label="Run")
+    run_agicat_schema = mo.ui.run_button(label="Run")
+    run_agicat_data = mo.ui.run_button(label="Run")
     run_dagify_compose = mo.ui.run_button(label="Run")
     run_dagify_refine = mo.ui.run_button(label="Run")
     run_dagify_resolve = mo.ui.run_button(label="Run")
@@ -94,6 +99,9 @@ def _(browser_store_get, mo):
         agint_api_key,
         api_base_url,
         check_api_connection,
+        run_agicat_data,
+        run_agicat_schema,
+        run_agiwrite_schema,
         run_dagent_execute,
         run_dagify_compile,
         run_dagify_compose,
@@ -102,9 +110,11 @@ def _(browser_store_get, mo):
         run_datagin_ingest,
         run_datagin_stdin,
         run_datagin_synthesize,
+        run_schema_artifacts,
         run_schema_compose,
         run_schema_refine,
         run_schema_visualize,
+        run_schema_visualize_artifacts,
     )
 
 
@@ -437,6 +447,30 @@ async def _(agint_post, example_panel, run_schema_compose):
 
 
 @app.cell(hide_code=True)
+async def _(agint_post, example_panel, run_schema_artifacts):
+    schema_artifacts_command = (
+        'schemagin compose "A schema representing a hedge fund" '
+        "--visual dot --visual dbml --visual d2 --output-dir ./outputs/schemagin"
+    )
+    schema_artifacts_response = None
+    if run_schema_artifacts.value:
+        schema_artifacts_response = await agint_post(
+            "/schemagin/compose",
+            {
+                "prompt": "A schema representing a hedge fund",
+                "visual": ["dot", "dbml", "d2"],
+                "output_dir": "./outputs/schemagin",
+            },
+        )
+    example_panel(
+        run_schema_artifacts,
+        schema_artifacts_command,
+        schema_artifacts_response,
+    )
+    return (schema_artifacts_response,)
+
+
+@app.cell(hide_code=True)
 async def _(FILES, agint_post, example_panel, run_schema_refine):
     schema_refine_command = (
         'schemagin refine "Add soft-delete flags to all tables" '
@@ -475,6 +509,30 @@ async def _(FILES, agint_post, example_panel, run_schema_visualize):
         )
     example_panel(run_schema_visualize, schema_visualize_command, schema_visualize_response)
     return (schema_visualize_response,)
+
+
+@app.cell(hide_code=True)
+async def _(FILES, agint_post, example_panel, run_schema_visualize_artifacts):
+    schema_visualize_artifacts_command = (
+        "schemagin visualize schema.yaml "
+        "--visual dot --visual dbml --visual d2 --output-dir ./outputs/schema_docs"
+    )
+    schema_visualize_artifacts_response = None
+    if run_schema_visualize_artifacts.value:
+        schema_visualize_artifacts_response = await agint_post(
+            "/schemagin/visualize",
+            {
+                "schema": FILES.get("schema.yaml", ""),
+                "visual": ["dot", "dbml", "d2"],
+                "output_dir": "./outputs/schema_docs",
+            },
+        )
+    example_panel(
+        run_schema_visualize_artifacts,
+        schema_visualize_artifacts_command,
+        schema_visualize_artifacts_response,
+    )
+    return (schema_visualize_artifacts_response,)
 
 
 @app.cell(hide_code=True)
@@ -554,6 +612,83 @@ async def _(agint_post, example_panel, run_datagin_stdin):
         )
     example_panel(run_datagin_stdin, datagin_stdin_command, datagin_stdin_response)
     return (datagin_stdin_response,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    # agilink
+
+    Move schemas and table data between local files, DuckDB files, and
+    Agilink-style workspaces.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+async def _(FILES, agint_post, example_panel, run_agiwrite_schema):
+    agiwrite_schema_command = (
+        "agiwrite schema schema.yaml --target-db ingestedFinancials.duckdb"
+    )
+    agiwrite_schema_response = None
+    if run_agiwrite_schema.value:
+        agiwrite_schema_response = await agint_post(
+            "/agiwrite/schema",
+            {
+                "schema": FILES.get("schema.yaml", ""),
+                "target_db": "ingestedFinancials.duckdb",
+            },
+        )
+    example_panel(
+        run_agiwrite_schema,
+        agiwrite_schema_command,
+        agiwrite_schema_response,
+    )
+    return (agiwrite_schema_response,)
+
+
+@app.cell(hide_code=True)
+async def _(agint_post, example_panel, run_agicat_schema):
+    agicat_schema_command = (
+        "agicat schema ingestedFinancials.duckdb --output-format yaml "
+        "> exported_schema.yaml"
+    )
+    agicat_schema_response = None
+    if run_agicat_schema.value:
+        agicat_schema_response = await agint_post(
+            "/agicat/schema",
+            {
+                "source_db": "ingestedFinancials.duckdb",
+                "output_format": "yaml",
+            },
+        )
+    example_panel(
+        run_agicat_schema,
+        agicat_schema_command,
+        agicat_schema_response,
+        output_name="exported_schema.yaml",
+    )
+    return (agicat_schema_response,)
+
+
+@app.cell(hide_code=True)
+async def _(agint_post, example_panel, run_agicat_data):
+    agicat_data_command = (
+        "agicat data ingestedFinancials.duckdb --output-format directory "
+        "--output-dir ./exports/financials"
+    )
+    agicat_data_response = None
+    if run_agicat_data.value:
+        agicat_data_response = await agint_post(
+            "/agicat/data",
+            {
+                "source_db": "ingestedFinancials.duckdb",
+                "output_format": "directory",
+                "output_dir": "./exports/financials",
+            },
+        )
+    example_panel(run_agicat_data, agicat_data_command, agicat_data_response)
+    return (agicat_data_response,)
 
 
 @app.cell(hide_code=True)

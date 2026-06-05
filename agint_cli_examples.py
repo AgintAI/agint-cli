@@ -351,6 +351,27 @@ def _(shell):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md("""
+    ### Generate schema diagram source artifacts
+
+    ```bash
+    schemagin compose "A schema representing a hedge fund" --visual dot --visual dbml --visual d2 --output-dir ./outputs/schemagin
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(shell):
+    shell(
+        schema_artifacts
+        := """schemagin compose "A schema representing a hedge fund" --visual dot --visual dbml --visual d2 --output-dir ./outputs/schemagin"""
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
     ### Refine an existing schema with context
 
     ```bash
@@ -384,6 +405,27 @@ def _(mo):
 @app.cell
 def _(shell):
     shell(schema_visualize := """schemagin visualize schema.yaml --ascii""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ### Export visualizations from an existing schema
+
+    ```bash
+    schemagin visualize schema.yaml --visual dot --visual dbml --visual d2 --output-dir ./outputs/schema_docs
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(shell):
+    shell(
+        schema_visualize_artifacts
+        := """schemagin visualize schema.yaml --visual dot --visual dbml --visual d2 --output-dir ./outputs/schema_docs"""
+    )
     return
 
 
@@ -469,6 +511,92 @@ def _(shell):
         printf '%s\\n' "Eleanor Patel increased investment to $10,000." > fund-note.txt
         cat fund-note.txt | datagin ingest "Extract financial data" - --output-agilink ingestedFinancials.duckdb
         """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    # agilink
+
+    **Move schemas and table data between local files, DuckDB files, and Agilink-style workspaces.**
+
+    The thin client exposes these commands as `agicat` and `agiwrite` when the
+    server advertises those OpenAPI groups. Older installs can use the parent
+    command form, such as `agi-tools agicat ...` or `agi-tools agiwrite ...`.
+
+    ---
+
+    ## Sub-Commands
+
+    | Command | Description |
+    |:--|:--|
+    | **`agiwrite schema`** | Materialize a schema into a target database or workspace. |
+    | **`agiwrite data`** | Write CSV directory data into a target database or workspace. |
+    | **`agicat schema`** | Read a schema back out as YAML or JSON. |
+    | **`agicat data`** | Export table data as CSV or a directory of CSV files. |
+
+    ---
+
+    ## Usage Examples
+
+    ### Materialize a generated schema into DuckDB
+
+    ```bash
+    agiwrite schema schema.yaml --target-db ingestedFinancials.duckdb
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(shell):
+    shell(
+        agiwrite_schema
+        := """agiwrite schema schema.yaml --target-db ingestedFinancials.duckdb"""
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ### Read a schema back from DuckDB
+
+    ```bash
+    agicat schema ingestedFinancials.duckdb --output-format yaml > exported_schema.yaml
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(shell):
+    shell(
+        agicat_schema
+        := """agicat schema ingestedFinancials.duckdb --output-format yaml > exported_schema.yaml"""
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ### Export table data as CSV files
+
+    ```bash
+    agicat data ingestedFinancials.duckdb --output-format directory --output-dir ./exports/financials
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(shell):
+    shell(
+        agicat_data
+        := """agicat data ingestedFinancials.duckdb --output-format directory --output-dir ./exports/financials"""
     )
     return
 

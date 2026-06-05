@@ -36,6 +36,43 @@ export AGINT_APIKEY=your-api-key
 
 - Please refer to `commands.md` to view the full manual for available commands
 
+### Artifact sync
+
+For generated-tool commands, the thin client keeps local generated artifacts and
+the remote `agitransfer://` workspace in sync:
+
+- before a command, selected local files in the current directory are uploaded to
+  the authenticated user's remote workspace;
+- after a successful command, the remote workspace is zipped and downloaded back
+  into the current directory.
+
+The sync-enabled command groups are:
+
+```text
+agicat
+agiwrite
+dagify
+dagent
+schemagin
+datagin
+```
+
+When the server advertises the `agicat` and `agiwrite` OpenAPI groups, the thin
+client exposes direct `agicat` and `agiwrite` console commands. Older installs
+can use the parent command form, such as `agi-tools agicat ...` or
+`agi-tools agiwrite ...`.
+
+This supports common generated artifacts such as schemas, DAGs, diagrams,
+rendered outputs, DuckDB files, CSVs, Markdown, SQL, and source files. Synced
+extensions include:
+
+```text
+.csv .d2 .dbml .dot .duckdb .flow .html .json .md .pdf .png .py .sql .svg .txt .yaml .yml
+```
+
+Large binary/rendered artifacts such as `.duckdb`, `.pdf`, `.png`, and `.svg`
+are subject to a conservative size limit during upload.
+
 ### Example commands
 
 ```bash
@@ -46,50 +83,89 @@ dagify compose "Analyze a stock using fundamental data" --ascii --intelligence 5
 
 ```bash
 # Coordinate a complex series of events
-dagify compose "3 events A B C, happen concurrently with no dependencies on each other,                                                                                                                                                                                    
-                                                                                                                                                                                                                                                                                                                          
-             but then AB happens after A and B and likewise for AC and BC and lastly                                                                                                                                                                       
-                                                                                                                                                                                                                                                                                                                          
-                 they all join at ABC concurrently" --ascii --intelligence 5
-
+dagify compose "3 events A B C happen concurrently with no dependencies on each other, \
+but then AB happens after A and B, AC happens after A and C, BC happens after B and C, \
+and lastly they all join at ABC concurrently" \
+  --ascii \
+  --intelligence 5
 ```
 
 ```bash
 # Refine a workflow to add more detail to specific nodes
-dagify refine "Add more detailed instructions to the data cleaning step" workflow.yaml   --ascii
-
+dagify refine "Add more detailed instructions to the data cleaning step" \
+  workflow.yaml \
+  --ascii
 ```
 
 ```bash
-# Improve a machine learning workflow with hyperparameter tuning                                                                                                                                                                                    
-
-cat ml_pipeline.yaml | dagify refine "Turn the hyperparameters up to 11" -   
+# Improve a machine learning workflow with hyperparameter tuning
+cat ml_pipeline.yaml \
+  | dagify refine "Turn the hyperparameters up to 11" -
 ```
 
 ```bash
 # Compose a db schema for a blog, output it in json format
+schemagin compose "Blog schema with tags" \
+  --format=json \
+  > schema.json
+```
 
-schemagin compose "Blog schema with tags" --format=json > schema.json  
+```bash
+# Generate schema diagram source artifacts
+schemagin compose "A schema representing a hedge fund" \
+  --visual dot --visual dbml --visual d2 \
+  --output-dir ./outputs/schemagin
+```
 
+```bash
+# Export diagram source artifacts from an existing schema
+schemagin visualize schema.yaml \
+  --visual dot --visual dbml --visual d2 \
+  --output-dir ./outputs/schema_docs
 ```
 
 ```bash
 # Create a local database and from a dynamically generated schema
-schemagin compose "a database schema for a relational file system backing the metadata and contents of every file on an operating system  "                                                                                                                                                                  
-         | agiwrite schema - --target-db=instant.db    
-                                                                                                                                
+schemagin compose "a database schema for a relational file system backing the metadata and contents of every file on an operating system" \
+  | agiwrite schema - \
+    --target-db=instant.db
 ```
+
+```bash
+# Materialize a generated schema into DuckDB
+agiwrite schema schema.yaml --target-db ingestedFinancials.duckdb
+```
+
+```bash
+# Read a schema back from DuckDB
+agicat schema ingestedFinancials.duckdb --output-format yaml > exported_schema.yaml
+```
+
+```bash
+# Export table data as CSV files
+agicat data ingestedFinancials.duckdb \
+  --output-format directory \
+  --output-dir ./exports/financials
+```
+
 ```bash
 # Extract structured names and emails from a CSV file into a local DuckDB database
-datagin ingest "Extract names,emails" messy_input_data.txt --output-agilink ./local.duckdb                                                                                                                                                                             
+datagin ingest "Extract names,emails" \
+  messy_input_data.txt \
+  --output-agilink ./local.duckdb
 ```
 
 ```bash
-# Extract and structure the first 50 invoices from a PDF document                                                                                                                                
-datagin ingest --rows=50 "Parse invoices" invoices.pdf --output-agilink agilink://raw_invoices                                                                                                                                                                                                                                                                                                     
-# Structure skewed JSON data provided via stdin into agilink                                                                                                                                 
-cat data.json | datagin ingest "Structure JSON" - --output-agilink ./local.duckdb    
+# Extract and structure the first 50 invoices from a PDF document
+datagin ingest --rows=50 \
+  "Parse invoices" \
+  invoices.pdf \
+  --output-agilink agilink://raw_invoices
 
+# Structure skewed JSON data provided via stdin into agilink
+cat data.json \
+  | datagin ingest "Structure JSON" - \
+    --output-agilink ./local.duckdb
 ```
 
 ## Marimo notebooks

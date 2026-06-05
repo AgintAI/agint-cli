@@ -59,15 +59,33 @@ UPLOAD_EXCLUDED_DIRS = {
     ".cache",
 }
 
-# Only sync files with these extensions (generated output types)
-UPLOAD_ALLOWED_EXTENSIONS = {".yaml", ".yml", ".py", ".flow", ".json", ".duckdb"}
+# Only sync files with these extensions (generated output and source artifact types)
+UPLOAD_ALLOWED_EXTENSIONS = {
+    ".csv",
+    ".d2",
+    ".dbml",
+    ".dot",
+    ".duckdb",
+    ".flow",
+    ".html",
+    ".json",
+    ".md",
+    ".pdf",
+    ".png",
+    ".py",
+    ".sql",
+    ".svg",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
 
 # Files to always skip during upload (e.g. spec files that shouldn't be synced)
 UPLOAD_EXCLUDED_FILES = {"openapi.json", UPLOAD_CACHE_FILE}
 
-# Max file size for large binary extensions (10 MB)
+# Max file size for large binary or rendered artifact extensions (10 MB)
 UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024
-UPLOAD_SIZE_LIMITED_EXTENSIONS = {".duckdb"}
+UPLOAD_SIZE_LIMITED_EXTENSIONS = {".duckdb", ".pdf", ".png", ".svg"}
 
 # Module-level cache variables
 _spec_cache: Optional[Dict[str, Any]] = None
@@ -806,7 +824,14 @@ def create_command_function(
 
         # Determine the command group (e.g., dagify, dagent)
         command_group = path_str.strip("/").split("/")[0]
-        sync_required_groups = {"dagify", "dagent", "schemagin", "datagin"}
+        sync_required_groups = {
+            "agicat",
+            "agiwrite",
+            "dagify",
+            "dagent",
+            "schemagin",
+            "datagin",
+        }
 
         # --- BEGIN PRE-COMMAND UPSTREAM SYNC ---
         if command_group in sync_required_groups:
@@ -1106,6 +1131,8 @@ dagify = cli_apps.get("dagify")
 dagent = cli_apps.get("dagent")
 schemagin = cli_apps.get("schemagin")
 datagin = cli_apps.get("datagin")
+agicat = cli_apps.get("agicat")
+agiwrite = cli_apps.get("agiwrite")
 pagint = cli_apps.get("pagint")
 agitransfer = cli_apps.get("agitransfer")
 
@@ -1122,7 +1149,16 @@ def _unavailable_command():
 
 
 # Ensure every exported entry point is callable (not None) so console_scripts don't crash
-for _name in ("dagify", "dagent", "schemagin", "datagin", "pagint", "agitransfer"):
+for _name in (
+    "dagify",
+    "dagent",
+    "schemagin",
+    "datagin",
+    "agicat",
+    "agiwrite",
+    "pagint",
+    "agitransfer",
+):
     if globals().get(_name) is None:
         globals()[_name] = _unavailable_command
 

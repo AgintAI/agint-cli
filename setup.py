@@ -36,7 +36,9 @@ setup(
             "dagent=agi_tools_client.cli:dagent",
             "schemagin=agi_tools_client.cli:schemagin",
             "datagin=agi_tools_client.cli:datagin",
+            "agicat=agi_tools_client.cli:agicat",
+            "agiwrite=agi_tools_client.cli:agiwrite",
             "agitransfer=agi_tools_client.cli:agitransfer",
         ],
     },
-) 
+)
