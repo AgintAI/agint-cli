@@ -37,7 +37,7 @@ def _(mo):
 def _(mo):
     api_base_url = mo.ui.text(
         label="API base URL",
-        value="https://api.agintai.com",
+        value="",
         placeholder="https://your-agint-api.example.com",
         full_width=True,
     )
