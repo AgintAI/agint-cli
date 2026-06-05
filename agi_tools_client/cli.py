@@ -202,8 +202,11 @@ def load_openapi_spec() -> Dict[str, Any]:
                 logger.debug("Updated OpenAPI spec cache.")
 
             return spec_data
-    except (httpx.HTTPError, httpx.ConnectError) as e:
-        logger.warning(f"Failed to fetch OpenAPI spec from server: {str(e)}")
+    except (httpx.HTTPError, httpx.ConnectError, KeyboardInterrupt) as e:
+        if isinstance(e, KeyboardInterrupt):
+            logger.warning("OpenAPI spec fetch interrupted.")
+        else:
+            logger.warning(f"Failed to fetch OpenAPI spec from server: {str(e)}")
         # Fall back to local spec file if available
         spec_path = os.getenv("OPENAPI_SPEC_PATH", "openapi.json")
         if Path(spec_path).exists():
@@ -1080,11 +1083,23 @@ def create_cli_apps():
     return apps
 
 
-# Load .env file if present (for standalone pip install usage)
-load_dotenv()
+# Load .env file: check CWD first, then the standard install directory
+load_dotenv()  # CWD/.env
+_install_env = Path.home() / "agint" / ".env"
+if _install_env.exists():
+    load_dotenv(_install_env, override=False)  # Don't override CWD values
 
-# Create the CLI apps
-cli_apps = create_cli_apps()
+# Create the CLI apps — wrapped to avoid crashing at import time if server is down
+try:
+    cli_apps = create_cli_apps()
+except SystemExit:
+    # load_openapi_spec raises typer.Exit(code=1) on failure, which becomes SystemExit.
+    # Provide an empty dict so entry points still load (they'll show an error when invoked).
+    logger.error(
+        "Failed to initialize CLI commands. Check your network connection and "
+        "DOCKER_BUILDER_API_URL setting."
+    )
+    cli_apps = {}
 
 # Export each app as a module-level variable
 dagify = cli_apps.get("dagify")
@@ -1095,12 +1110,31 @@ pagint = cli_apps.get("pagint")
 agitransfer = cli_apps.get("agitransfer")
 
 
+def _unavailable_command():
+    """Placeholder for commands that failed to load."""
+    typer.secho(
+        "Error: This command is not available. The server could not be reached during startup.\n"
+        "Check your DOCKER_BUILDER_API_URL and network connection, then try again.",
+        fg=typer.colors.RED,
+        err=True,
+    )
+    raise typer.Exit(code=1)
+
+
+# Ensure every exported entry point is callable (not None) so console_scripts don't crash
+for _name in ("dagify", "dagent", "schemagin", "datagin", "pagint", "agitransfer"):
+    if globals().get(_name) is None:
+        globals()[_name] = _unavailable_command
+
+
 # @traceable
 def main():
     """Entry point for CLI commands."""
     script_name = Path(sys.argv[0]).stem
     if script_name in cli_apps:
         cli_apps[script_name]()
+    elif not cli_apps:
+        _unavailable_command()
     else:
         # Create a parent app that includes all commands
         app = typer.Typer(help="Docker Builder CLI")
