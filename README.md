@@ -4,11 +4,28 @@ A command-line interface (CLI) client for interacting with Agint.
 
 ## Installation
 
-Run the install script — it creates a virtual environment, installs the CLI, and prompts you for your API credentials:
+Run the install script — it creates a virtual environment, installs the CLI,
+creates a default workspace, and prompts you for your API credentials:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/AgintAI/agint-cli/main/install.sh | bash
 ```
+
+By default this installs into `~/agint`, stores credentials in `~/agint/.env`,
+and creates `~/agint/work` for running commands. At the end of the install, the
+script asks whether to open an activated shell in that workspace. If you answer
+yes, it runs the equivalent of:
+
+```bash
+source ~/agint/.venv/bin/activate
+cd ~/agint/work
+```
+
+Run `exit` to return to your previous shell.
+
+If you rerun the installer, it preserves `~/agint/.env`, moves the old install
+to a timestamped backup such as `~/agint.backup.20260605173000`, and creates a
+fresh install plus workspace.
 
 Or install manually with pip:
 
@@ -45,6 +62,9 @@ the remote `agitransfer://` workspace in sync:
   the authenticated user's remote workspace;
 - after a successful command, the remote workspace is zipped and downloaded back
   into the current directory.
+
+Run commands from a project/work directory, such as `~/agint/work`, instead of
+the install root. The curl installer creates that workspace for this purpose.
 
 The sync-enabled command groups are:
 
