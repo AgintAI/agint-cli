@@ -17,7 +17,29 @@ def _():
     import marimo as mo
 
     IS_WASM = "pyodide" in sys.modules
-    return IS_WASM, base64, html, json, mo, re, urllib
+
+    def browser_store_get(key: str, default: str = ""):
+        if not IS_WASM:
+            return default
+        try:
+            from js import localStorage
+
+            value = localStorage.getItem(key)
+            return default if value is None else str(value)
+        except Exception:
+            return default
+
+    def browser_store_set(key: str, value: str):
+        if not IS_WASM:
+            return
+        try:
+            from js import localStorage
+
+            localStorage.setItem(key, value)
+        except Exception:
+            pass
+
+    return IS_WASM, base64, browser_store_get, browser_store_set, html, json, mo, re, urllib
 
 
 @app.cell(hide_code=True)
@@ -34,15 +56,16 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _(browser_store_get, mo):
     api_base_url = mo.ui.text(
         label="API base URL",
-        value="",
+        value=browser_store_get("agint_cli_examples_api_base_url"),
         placeholder="https://your-agint-api.example.com",
         full_width=True,
     )
     agint_api_key = mo.ui.text(
         label="AGInt API key",
+        value=browser_store_get("agint_cli_examples_api_key"),
         kind="password",
         full_width=True,
     )
@@ -103,7 +126,18 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
+def _(
+    IS_WASM,
+    agint_api_key,
+    api_base_url,
+    base64,
+    browser_store_set,
+    html,
+    json,
+    mo,
+    re,
+    urllib,
+):
     FILES = {}
 
     def command_block(command: str):
@@ -146,16 +180,28 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
         seen_progress = {}
         for line in cleaned.split("\n"):
             stripped = line.rstrip()
-            progress_key = stripped.strip()
+            progress_key = re.sub(r"^[^A-Za-z0-9_/-]+", "", stripped.strip())
             if progress_key.endswith("..."):
-                seen_progress[progress_key] = seen_progress.get(progress_key, 0) + 1
-                if seen_progress[progress_key] > 2:
+                if progress_key in seen_progress:
                     continue
-            if lines and lines[-1] == stripped and progress_key.endswith("..."):
+                seen_progress[progress_key] = True
+                lines.append(progress_key)
+                continue
+            if lines and lines[-1] == stripped:
                 continue
             lines.append(stripped)
 
         return "\n".join(lines).strip("\n")
+
+    def save_browser_config(*, include_api_key: bool):
+        api_url = api_base_url.value.strip()
+        if api_url:
+            browser_store_set("agint_cli_examples_api_base_url", api_url)
+        if include_api_key and agint_api_key.value.strip():
+            browser_store_set(
+                "agint_cli_examples_api_key",
+                agint_api_key.value.strip(),
+            )
 
     def example_panel(run_button, command: str, response, *, output_name=None):
         return mo.vstack(
@@ -266,7 +312,9 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
                 text = await response.string()
                 if response.status >= 400:
                     return {"http_error": f"{response.status} {response.status_text}\n{text}"}
-                return json.loads(text)
+                data = json.loads(text)
+                save_browser_config(include_api_key=True)
+                return data
             except Exception as error:
                 return {"http_error": str(error)}
 
@@ -278,7 +326,9 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
         )
         try:
             with urllib.request.urlopen(request, timeout=180) as response:
-                return json.loads(response.read().decode("utf-8"))
+                data = json.loads(response.read().decode("utf-8"))
+                save_browser_config(include_api_key=True)
+                return data
         except urllib.error.HTTPError as error:
             body_text = error.read().decode("utf-8", errors="replace")
             return {"http_error": f"{error.code} {error.reason}\n{body_text}"}
@@ -299,6 +349,7 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
                 text = await response.string()
                 if response.status >= 400:
                     return {"http_error": f"{response.status} {response.status_text}\n{text}"}
+                save_browser_config(include_api_key=False)
                 try:
                     return json.loads(text)
                 except json.JSONDecodeError:
@@ -317,6 +368,7 @@ def _(IS_WASM, agint_api_key, api_base_url, base64, html, json, mo, re, urllib):
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 text = response.read().decode("utf-8")
+                save_browser_config(include_api_key=False)
                 try:
                     return json.loads(text)
                 except json.JSONDecodeError:
