@@ -706,7 +706,7 @@ def _(mo):
 async def _(agint_post, example_panel, run_dagify_compose):
     dagify_compose_command = (
         'dagify compose "A workflow representing hedge fund due diligence" '
-        "--ascii --intelligence 25 > hedgefund.flow"
+        "--ascii --intelligence 5 > hedgefund.flow"
     )
     dagify_compose_response = None
     if run_dagify_compose.value:
@@ -715,7 +715,7 @@ async def _(agint_post, example_panel, run_dagify_compose):
             {
                 "prompt": "A workflow representing hedge fund due diligence",
                 "ascii": True,
-                "intelligence": 25,
+                "intelligence": 5,
             },
         )
     example_panel(
@@ -731,7 +731,7 @@ async def _(agint_post, example_panel, run_dagify_compose):
 async def _(FILES, agint_post, example_panel, run_dagify_refine):
     dagify_refine_command = (
         'dagify refine "Improve all nodes in this workflow" hedgefund.flow '
-        "--ascii --intelligence 25 > improved.flow"
+        "--ascii --intelligence 5 > improved.flow"
     )
     dagify_refine_response = None
     if run_dagify_refine.value:
@@ -739,9 +739,9 @@ async def _(FILES, agint_post, example_panel, run_dagify_refine):
             "/dagify/refine",
             {
                 "prompt": "Improve all nodes in this workflow",
-                "data": FILES.get("hedgefund.flow", ""),
+                "workflow": FILES.get("hedgefund.flow", ""),
                 "ascii": True,
-                "intelligence": 25,
+                "intelligence": 5,
             },
         )
     example_panel(
@@ -755,15 +755,15 @@ async def _(FILES, agint_post, example_panel, run_dagify_refine):
 
 @app.cell(hide_code=True)
 async def _(FILES, agint_post, example_panel, run_dagify_resolve):
-    dagify_resolve_command = "dagify resolve improved.flow --ascii --intelligence 25"
+    dagify_resolve_command = "dagify resolve improved.flow --ascii --intelligence 5"
     dagify_resolve_response = None
     if run_dagify_resolve.value:
         dagify_resolve_response = await agint_post(
             "/dagify/resolve",
             {
-                "data": FILES.get("improved.flow", ""),
+                "workflow": FILES.get("improved.flow", ""),
                 "ascii": True,
-                "intelligence": 25,
+                "intelligence": 5,
             },
         )
     example_panel(run_dagify_resolve, dagify_resolve_command, dagify_resolve_response)
@@ -774,7 +774,7 @@ async def _(FILES, agint_post, example_panel, run_dagify_resolve):
 async def _(FILES, agint_post, example_panel, run_dagify_compile):
     dagify_compile_command = (
         "dagify compile improved.flow --type-floor pure "
-        "--build-target crewai --intelligence 25"
+        "--build-target crewai --tools tools.yaml --intelligence 5"
     )
     dagify_compile_response = None
     if run_dagify_compile.value:
@@ -784,7 +784,8 @@ async def _(FILES, agint_post, example_panel, run_dagify_compile):
                 "data": FILES.get("improved.flow", ""),
                 "type_floor": "pure",
                 "build_target": "crewai",
-                "intelligence": 25,
+                "tools": FILES.get("tools.yaml", ""),
+                "intelligence": 5,
             },
         )
     example_panel(run_dagify_compile, dagify_compile_command, dagify_compile_response)
@@ -805,7 +806,7 @@ def _(mo):
 async def _(FILES, agint_post, example_panel, run_dagent_execute):
     dagent_execute_command = (
         'cat hedgefund.flow | dagent execute - "Large cap stocks only" '
-        "--intelligence 25"
+        "--intelligence 5"
     )
     dagent_execute_response = None
     if run_dagent_execute.value:
@@ -813,9 +814,9 @@ async def _(FILES, agint_post, example_panel, run_dagent_execute):
             "/dagent/execute",
             {
                 "plan": "-",
-                "data": "Large cap stocks only",
+                "context": "Large cap stocks only",
                 "stdin": FILES.get("hedgefund.flow", ""),
-                "intelligence": 25,
+                "intelligence": 5,
             },
         )
     example_panel(run_dagent_execute, dagent_execute_command, dagent_execute_response)

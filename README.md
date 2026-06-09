@@ -40,13 +40,39 @@ and lastly they all join at ABC concurrently" \
 # Refine a workflow to add more detail to specific nodes
 dagify refine "Add more detailed instructions to the data cleaning step" \
   workflow.yaml \
-  --ascii
+  --ascii \
+  --intelligence 5
 ```
 
 ```bash
 # Improve a machine learning workflow with hyperparameter tuning
 cat ml_pipeline.yaml \
-  | dagify refine "Turn the hyperparameters up to 11" -
+  | dagify refine "Turn the hyperparameters up to 11" - \
+    --intelligence 5
+```
+
+```bash
+# Resolve a workflow to the next concrete DAG type
+dagify resolve workflow.yaml \
+  --ascii \
+  --intelligence 5
+```
+
+```bash
+# Resolve a tool-aware workflow; --tools is used to look up already-selected tool signatures
+dagify resolve workflow.yaml context.md \
+  --tools tools.yaml \
+  --guidance "preserve existing tool choices while improving typed contracts" \
+  --ascii \
+  --intelligence 5
+```
+
+```bash
+# Execute a workflow with runtime context, structured input args, and selected-tool allowlist
+dagent execute workflow.yaml context.md \
+  --input input_args.yaml \
+  --tools tools.yaml \
+  --intelligence 5
 ```
 
 ```bash

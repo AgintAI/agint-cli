@@ -615,8 +615,8 @@ def _(mo):
     | Command | Description |
     |:--|:--|
     | **`compose`** | Create a workflow DAG from a natural-language description. |
-    | **`refine`** | Improve an existing workflow DAG using a prompt and optional source data. |
-    | **`resolve`** | Upgrade a DAG to a more concrete type in the DAG hierarchy. |
+    | **`refine`** | Improve an existing workflow DAG using a prompt, optional context, and optional tool catalog. |
+    | **`resolve`** | Upgrade a DAG to a more concrete type in the DAG hierarchy. Use `--tools` when the workflow already contains `selected_tools` so resolve can look up their signatures. |
     | **`compile`** | Compile a DAG into an executable target such as CrewAI. |
 
     ---
@@ -626,7 +626,7 @@ def _(mo):
     ### Compose a workflow
 
     ```bash
-    dagify compose "A workflow representing hedge fund due diligence" --ascii --intelligence 50 > hedgefund.flow
+    dagify compose "A workflow representing hedge fund due diligence" --ascii --intelligence 5 > hedgefund.flow
     ```
     """)
     return
@@ -636,7 +636,7 @@ def _(mo):
 def _(shell):
     shell(
         dagify_compose
-        := """dagify compose "A workflow representing hedge fund due diligence" --ascii --intelligence 50 > hedgefund.flow"""
+        := """dagify compose "A workflow representing hedge fund due diligence" --ascii --intelligence 5 > hedgefund.flow"""
     )
     return
 
@@ -647,7 +647,7 @@ def _(mo):
     ### Refine a workflow
 
     ```bash
-    dagify refine "Improve all nodes in this workflow" hedgefund.flow --ascii --intelligence 50 > improved.flow
+    dagify refine "Improve all nodes in this workflow" hedgefund.flow --ascii --intelligence 5 > improved.flow
     ```
     """)
     return
@@ -657,7 +657,7 @@ def _(mo):
 def _(shell):
     shell(
         dagify_refine
-        := """dagify refine "Improve all nodes in this workflow" hedgefund.flow --ascii --intelligence 50 > improved.flow"""
+        := """dagify refine "Improve all nodes in this workflow" hedgefund.flow --ascii --intelligence 5 > improved.flow"""
     )
     return
 
@@ -668,7 +668,13 @@ def _(mo):
     ### Resolve a workflow
 
     ```bash
-    dagify resolve improved.flow --ascii --intelligence 50
+    dagify resolve improved.flow --ascii --intelligence 5
+    ```
+
+    For tool-aware workflows, pass the same tool catalog or allowlist used when the tools were selected:
+
+    ```bash
+    dagify resolve improved.flow context.md --tools tools.yaml --guidance "preserve existing tool choices" --ascii --intelligence 5
     ```
     """)
     return
@@ -677,7 +683,7 @@ def _(mo):
 @app.cell
 def _(shell):
     shell(
-        dagify_resolve := """dagify resolve improved.flow --ascii --intelligence 50"""
+        dagify_resolve := """dagify resolve improved.flow --ascii --intelligence 5"""
     )
     return
 
@@ -688,7 +694,7 @@ def _(mo):
     ### Compile a workflow
 
     ```bash
-    dagify compile improved.flow --type-floor pure --build-target crewai --intelligence 50
+    dagify compile improved.flow --type-floor pure --build-target crewai --tools tools.yaml --intelligence 5
     ```
     """)
     return
@@ -698,7 +704,7 @@ def _(mo):
 def _(shell):
     shell(
         dagify_compile
-        := """dagify compile improved.flow --type-floor pure --build-target crewai --intelligence 50"""
+        := """dagify compile improved.flow --type-floor pure --build-target crewai --tools tools.yaml --intelligence 5"""
     )
     return
 
@@ -718,7 +724,7 @@ def _(mo):
     |:--|:--|
     | **`validate`** | Check DAG structure, dependencies, and execution feasibility. |
     | **`optimize`** | Tune AI-driven DAG nodes against test data. |
-    | **`execute`** | Execute a DAG plan with optional external data. |
+    | **`execute`** | Execute a DAG plan with optional context, structured input args, and a tool allowlist/catalog. |
     | **`interpret`** | Generate and execute a DAG plan dynamically. |
     | **`synthesize`** | Generate, compile, and execute a DAG plan in one flow. |
 
@@ -729,7 +735,13 @@ def _(mo):
     ### Execute from stdin
 
     ```bash
-    cat hedgefund.flow | dagent execute - "Large cap stocks only" --intelligence 50
+    cat hedgefund.flow | dagent execute - "Large cap stocks only" --intelligence 5
+    ```
+
+    Tool-aware workflows require the runtime tool allowlist/catalog:
+
+    ```bash
+    dagent execute hedgefund.flow context.md --input input_args.yaml --tools tools.yaml --intelligence 5
     ```
     """)
     return
@@ -739,7 +751,7 @@ def _(mo):
 def _(shell):
     shell(
         dagent_execute
-        := """cat hedgefund.flow | dagent execute - "Large cap stocks only" --intelligence 50"""
+        := """cat hedgefund.flow | dagent execute - "Large cap stocks only" --intelligence 5"""
     )
     return
 

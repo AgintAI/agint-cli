@@ -1,8 +1,8 @@
-                                                                                
- Usage: dagify [OPTIONS] COMMAND [ARGS]...                                      
-                                                                                
-Compose, refine, resolve, and compile workflow DAGs using intuitive natural-language prompts.                              
-                                                                                
+
+ Usage: dagify [OPTIONS] COMMAND [ARGS]...
+
+Compose, refine, resolve, and compile workflow DAGs using intuitive natural-language prompts.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --install-completion          Install completion for the current shell.      │
 │ --show-completion             Show completion for the current shell, to copy │
@@ -21,11 +21,11 @@ Compose, refine, resolve, and compile workflow DAGs using intuitive natural-lang
 │ compile   Compiles a DAG into an executable format.                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagent [OPTIONS] COMMAND [ARGS]...                                      
-                                                                                
-Execute, validate, optimize, and interpret DAGs.                                                             
-                                                                                
+
+ Usage: dagent [OPTIONS] COMMAND [ARGS]...
+
+Execute, validate, optimize, and interpret DAGs.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --install-completion          Install completion for the current shell.      │
 │ --show-completion             Show completion for the current shell, to copy │
@@ -45,11 +45,11 @@ Execute, validate, optimize, and interpret DAGs.
 │              executes it.                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: schemagin [OPTIONS] COMMAND [ARGS]...                                   
-                                                                                
- Compose, refine, and visualize database schemas using intuitive, natural‑language prompts.                                                              
-                                                                                
+
+ Usage: schemagin [OPTIONS] COMMAND [ARGS]...
+
+ Compose, refine, and visualize database schemas using intuitive, natural‑language prompts.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --install-completion          Install completion for the current shell.      │
 │ --show-completion             Show completion for the current shell, to copy │
@@ -67,11 +67,11 @@ Execute, validate, optimize, and interpret DAGs.
 │             the schema concurrently.                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: datagin [OPTIONS] COMMAND [ARGS]...                                     
-                                                                                
- Converts unstructured data into structured data. Supports data transfer, transformation, and synthesis using a natural language prompt.                                      
-                                                                                
+
+ Usage: datagin [OPTIONS] COMMAND [ARGS]...
+
+ Converts unstructured data into structured data. Supports data transfer, transformation, and synthesis using a natural language prompt.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --install-completion          Install completion for the current shell.      │
 │ --show-completion             Show completion for the current shell, to copy │
@@ -84,30 +84,31 @@ Execute, validate, optimize, and interpret DAGs.
 │ transform    Transform structured data between schemas.                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagify compose [OPTIONS] PROMPT [DATA]                                  
-                                                                                
- Creates a new workflow from a description, supporting different types of       
- workflow representations.                                                      
- Examples:                                                                      
-     1. Create a new DAG from a description:                                    
-        $ dagify compose "Extract data from API, transform, and load to         
- database"                                                                      
-                                                                                
- 2. Create a DAG using an existing workflow as reference:        $ dagify       
- compose "Create CI pipeline" reference_workflow.json                           
- 3. Create a DAG using piped input as reference:        $ cat                   
- reference_workflow.json | dagify compose "Optimize this workflow" -            
- 4. Create a DAG from a database schema:        $ dagify compose "Generate ETL  
- pipeline" "postgres://user:pass@localhost:5432/db"                             
-                                                                                
+
+ Usage: dagify compose [OPTIONS] PROMPT [CONTEXT]
+
+ Creates a new workflow from a description, supporting different types of
+ workflow representations.
+ Examples:
+     1. Create a new DAG from a description:
+        $ dagify compose "Extract data from API, transform, and load to
+ database"
+
+ 2. Create a DAG using an existing workflow as reference:        $ dagify
+ compose "Create CI pipeline" reference_workflow.json
+ 3. Create a DAG using piped input as reference:        $ cat
+ reference_workflow.json | dagify compose "Optimize this workflow" -
+ 4. Create a DAG from a database schema:        $ dagify compose "Generate ETL
+ pipeline" "postgres://user:pass@localhost:5432/db"
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT    Description of the process or workflow to generate  │
 │                          a DAG for                                           │
 │                          [default: None]                                     │
 │                          [required]                                          │
-│      data        [DATA]  DAG source - can be a JSON file, agilink URI, JSON  │
-│                          string, or database connection. Use '-' for stdin   │
+│      context     [CONTEXT]  Optional context - can be a file path, inline    │
+│                             YAML/JSON/text, database connection, or '-' for  │
+│                             stdin                                            │
 │                          [default: None]                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
@@ -117,7 +118,7 @@ Execute, validate, optimize, and interpret DAGs.
 │                                            [default: typed]                  │
 │ --intelligence                    INTEGER  Intelligence level (0-100) for    │
 │                                            AI-assisted DAG generation        │
-│                                            [default: 0]                      │
+│                                            [default: 5]                      │
 │ --seed                            INTEGER  Seed for deterministic workflow   │
 │                                            generation                        │
 │ --format                          TEXT     Format for DAG output (yaml,      │
@@ -128,6 +129,8 @@ Execute, validate, optimize, and interpret DAGs.
 │ --ascii           --no-ascii               Show ASCII visualization of the   │
 │                                            generated DAG                     │
 │                                            [default: no-ascii]               │
+│ --tools                           TEXT     Tool catalog YAML/JSON, a path    │
+│                                            to one, or '-' for stdin          │
 │ --output-dir                      TEXT     Directory to save the generated   │
 │                                            DAG and visualization             │
 │                                            [default: ./outputs/dagify/]      │
@@ -136,25 +139,28 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                     Show this message and exit.       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagify refine [OPTIONS] PROMPT [DATA]                                   
-                                                                                
- Refines an existing workflow by improving metadata, details, instructions and  
- tags. Can also apply agent tags to enable agentic execution of workflow steps. 
-                                                                                
+
+ Usage: dagify refine [OPTIONS] PROMPT WORKFLOW [CONTEXT]
+
+ Refines an existing workflow by improving metadata, details, instructions and
+ tags. Can also apply agent tags to enable agentic execution of workflow steps.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT    Description of the refinement to be applied         │
 │                          [default: None]                                     │
 │                          [required]                                          │
-│      data        [DATA]  DAG source - can be a JSON file, agilink URI, or    │
-│                          JSON string. Use '-' for stdin                      │
+│ *    workflow    TEXT    Workflow source - can be a YAML/JSON file, inline   │
+│                          YAML/JSON, or '-' for stdin                        │
+│                          [required]                                          │
+│      context     TEXT    Optional refinement context - can be a file path,   │
+│                          inline YAML/JSON/text, or '-' for stdin             │
 │                          [default: None]                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --intelligence                         INTEGER  Intelligence level (0-100)   │
 │                                                 for AI-assisted DAG          │
 │                                                 generation                   │
-│                                                 [default: 0]                 │
+│                                                 [default: 5]                 │
 │ --seed                                 INTEGER  Seed for deterministic       │
 │                                                 workflow generation          │
 │ --format                               TEXT     Format for DAG output (yaml, │
@@ -166,6 +172,9 @@ Execute, validate, optimize, and interpret DAGs.
 │ --ascii           --no-ascii                    Display ASCII visualization  │
 │                                                 of the generated DAG         │
 │                                                 [default: no-ascii]          │
+│ --tools                                TEXT     Tool catalog YAML/JSON, a    │
+│                                                 path to one, or '-' for      │
+│                                                 stdin                        │
 │ --output-dir                           TEXT     Directory to save the        │
 │                                                 refined DAG and viz          │
 │ --verbose         --no-verbose                  Enable verbose output        │
@@ -177,23 +186,28 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                          Show this message and exit.  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagify resolve [OPTIONS] DATA                                           
-                                                                                
- Executes one pass of AI-assisted refinement to upgrade the DAG to a more       
- concrete type, while respecting the defined type hierarchy floor.              
-                                                                                
+
+ Usage: dagify resolve [OPTIONS] WORKFLOW [CONTEXT]
+
+ Executes one pass of AI-assisted refinement to upgrade the DAG to a more
+ concrete type, while respecting the defined type hierarchy floor.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
-│ *    data      TEXT  The DAG to resolve (file path, JSON string, or agilink  │
-│                      URI)                                                    │
-│                      [default: None]                                         │
+│ *    workflow  TEXT  The workflow to resolve (YAML/JSON file, inline         │
+│                      YAML/JSON, or '-' for stdin)                           │
 │                      [required]                                              │
+│      context   TEXT  Optional resolve context - can be a file path, inline   │
+│                      YAML/JSON/text, or '-' for stdin                        │
+│                      [default: None]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --guidance                            TEXT     Optional user guidance for    │
+│                                                 the resolve operation        │
+│                                                 [default: ]                  │
 │ --intelligence                         INTEGER  Intelligence level (0-100)   │
 │                                                 for AI-assisted DAG          │
 │                                                 generation                   │
-│                                                 [default: 0]                 │
+│                                                 [default: 5]                 │
 │ --seed                                 INTEGER  Seed for deterministic       │
 │                                                 workflow generation          │
 │ --format                               TEXT     Format for DAG output (yaml, │
@@ -205,6 +219,9 @@ Execute, validate, optimize, and interpret DAGs.
 │ --ascii           --no-ascii                    Show ASCII visualization of  │
 │                                                 the generated DAG            │
 │                                                 [default: no-ascii]          │
+│ --tools                                TEXT     Tool catalog YAML/JSON, a    │
+│                                                 path to one, or '-' for      │
+│                                                 stdin                        │
 │ --output-dir                           TEXT     Directory to save the        │
 │                                                 resolved DAG and viz         │
 │ --verbose         --no-verbose                  Enable verbose output        │
@@ -216,22 +233,22 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                          Show this message and exit.  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagify compile [OPTIONS] [DATA]                                         
-                                                                                
- Compiles a DAG into an executable format.                                      
- The compilation process involves two steps: 1. Resolving the DAG to the        
- specified type floor 2. (Optional) Converting to a target format               
- If no build target is specified, outputs the resolved DAG in YAML format.      
- Examples:                                                                      
-     # Resolve to 'typed' (default) and output YAML                             
-     dagify compile typed_dag.yaml --output-dir ./outputs/dagify                
-                                                                                
- # Resolve to 'spec' and compile to 'crewai' format     dagify compile          
- spec_dag.json --type-floor spec --build-target crewai                          
- # Compile from stdin to 'crewai-flat'     cat typed_dag.yaml | dagify compile  
- - --build-target crewai-flat > crew.py                                         
-                                                                                
+
+ Usage: dagify compile [OPTIONS] [DATA]
+
+ Compiles a DAG into an executable format.
+ The compilation process involves two steps: 1. Resolving the DAG to the
+ specified type floor 2. (Optional) Converting to a target format
+ If no build target is specified, outputs the resolved DAG in YAML format.
+ Examples:
+     # Resolve to 'typed' (default) and output YAML
+     dagify compile typed_dag.yaml --output-dir ./outputs/dagify
+
+ # Resolve to 'spec' and compile to 'crewai' format
+     dagify compile spec_dag.json --type-floor spec --build-target crewai --tools tools.yaml
+ # Compile from stdin to 'crewai-flat'
+     cat typed_dag.yaml | dagify compile - --build-target crewai-flat > crew.py
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │   data      [DATA]  The DAG to compile (file path, JSON string, or agilink   │
 │                     URI). Use '-' for stdin                                  │
@@ -246,6 +263,8 @@ Execute, validate, optimize, and interpret DAGs.
 │                                            wdl, or wdl-shims)                │
 │ --output-dir                      TEXT     Base directory for DAG outputs    │
 │                                            [default: ./outputs/dagify]       │
+│ --tools                           TEXT     Tool catalog YAML/JSON, a path    │
+│                                            to one, or '-' for stdin          │
 │ --ascii           --no-ascii               Show ASCII visualization of the   │
 │                                            generated DAG                     │
 │                                            [default: no-ascii]               │
@@ -257,38 +276,40 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                     Show this message and exit.       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: dagent execute [OPTIONS] [PLAN] [DATA]                                  
-                                                                                
- Execute a DAG plan with structured input and AI-assisted processing.           
- Saves the full execution results to a file in the output directory. Displays   
- final node outputs to stderr. Pipes full results to stdout if requested.       
- Examples:                                                                      
-     # Execute from YAML file and save results to                               
- ./outputs/dagent/workflow/execution_results/                                   
-     dagent execute workflow.yaml --output-dir ./outputs/dagent/                
-                                                                                
- # Execute from JSON file with external data     dagent execute plan.json       
- data.csv                                                                       
- # Execute from stdin     cat my_dag.json | dagent execute -                    
- # Execute a CrewAI project in the current directory     dagent execute .       
- # Execute a specific CrewAI project directory     dagent execute               
- ./my_crewai_project/ --data input_vars.json                                    
-                                                                                
+
+ Usage: dagent execute [OPTIONS] [PLAN] [CONTEXT]
+
+ Execute a DAG plan with structured input and AI-assisted processing.
+ Saves the full execution results to a file in the output directory. Displays
+ final node outputs to stderr. Pipes full results to stdout if requested.
+ Examples:
+     # Execute from YAML file and save results to
+ ./outputs/dagent/workflow/execution_results/
+     dagent execute workflow.yaml --output-dir ./outputs/dagent/
+
+ # Execute from JSON file with runtime context     dagent execute plan.json
+ context.yaml
+ # Execute from stdin     cat my_dag.json | dagent execute -
+ # Execute a CrewAI project in the current directory     dagent execute .
+ # Execute a specific CrewAI project directory     dagent execute
+ ./my_crewai_project/ context.yaml
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │   plan      [PLAN]  DAG plan to execute. Can be a JSON file, agilink URI, or │
 │                     JSON string. Use '-' for stdin                           │
 │                     [default: None]                                          │
-│   data      [DATA]  External data to provide during execution                │
-│                     [default: None]                                          │
+│   context   [CONTEXT]  Optional execution context - can be a file path,      │
+│                        inline YAML/JSON/text, or '-' for stdin              │
+│                        [default: None]                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --jit                              TEXT     Just-in-time (JIT) refinement    │
 │                                             mode                             │
-│ --tools                            TEXT     Comma-separated list of CLI      │
-│                                             tools available in the runtime   │
-│ --tools-file                       TEXT     File containing a list of tools  │
-│                                             (one per line)                   │
+│ --input                            TEXT     Structured input_args YAML/JSON, │
+│                                             a path to one, or '-' for stdin  │
+│ --tools                            TEXT     Tool allowlist/catalog           │
+│                                             YAML/JSON, a path to one, or '-' │
+│                                             for stdin                        │
 │ --output-format                    TEXT     Format for execution results     │
 │                                             (yaml, json)                     │
 │                                             [default: yaml]                  │
@@ -297,19 +318,19 @@ Execute, validate, optimize, and interpret DAGs.
 │                                             [default: ./outputs/dagent/]     │
 │ --intelligence                     INTEGER  Intelligence level (0-100) to    │
 │                                             determine model selection        │
-│                                             [default: 0]                     │
+│                                             [default: 5]                     │
 │ --seed                             INTEGER  Seed for deterministic execution │
 │ --verbose          --no-verbose             Enable verbose output            │
 │                                             [default: no-verbose]            │
 │ --help                                      Show this message and exit.      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: schemagin compose [OPTIONS] PROMPT                                      
-                                                                                
- Generate a completely new schema from scratch using natural‑language prompts.  
- Ideal for quickly scaffolding new projects or ideas.                           
-                                                                                
+
+ Usage: schemagin compose [OPTIONS] PROMPT
+
+ Generate a completely new schema from scratch using natural‑language prompts.
+ Ideal for quickly scaffolding new projects or ideas.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT  Natural language description of the schema to         │
 │                        generate.                                             │
@@ -359,12 +380,12 @@ Execute, validate, optimize, and interpret DAGs.
 │                                                       exit.                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: schemagin refine [OPTIONS] PROMPT                                       
-                                                                                
- Iteratively improve or extend an existing schema. Accepts structured schema    
- definitions from files, stdin, or explicit database links as context.          
-                                                                                
+
+ Usage: schemagin refine [OPTIONS] PROMPT
+
+ Iteratively improve or extend an existing schema. Accepts structured schema
+ definitions from files, stdin, or explicit database links as context.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT  Natural language description of the refinements to    │
 │                        make.                                                 │
@@ -421,12 +442,12 @@ Execute, validate, optimize, and interpret DAGs.
 │                                                         and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: schemagin visualize [OPTIONS] SCHEMA                                    
-                                                                                
- Render schema diagrams in various formats and optionally export the schema     
- concurrently.                                                                  
-                                                                                
+
+ Usage: schemagin visualize [OPTIONS] SCHEMA
+
+ Render schema diagrams in various formats and optionally export the schema
+ concurrently.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    schema      TEXT  Path to schema file, '-' for stdin, or agilink:// URI │
 │                        [default: None]                                       │
@@ -453,18 +474,18 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: datagin ingest [OPTIONS] PROMPT INPUT                                   
-                                                                                
- Extract and structure data from an input source.                               
- Examples:                                                                      
- datagin ingest "Extract user names and emails" input.txt --output-agilink      
- "sqlite:///output.db"                                                          
- datagin ingest "Parse invoice details" report.pdf --output-agilink             
- "duckdb:///invoices.db"                                                        
- cat data.json | datagin ingest "Structure this JSON data" - --output-agilink   
- "postgresql://user:pass@host/db"                                               
-                                                                                
+
+ Usage: datagin ingest [OPTIONS] PROMPT INPUT
+
+ Extract and structure data from an input source.
+ Examples:
+ datagin ingest "Extract user names and emails" input.txt --output-agilink
+ "sqlite:///output.db"
+ datagin ingest "Parse invoice details" report.pdf --output-agilink
+ "duckdb:///invoices.db"
+ cat data.json | datagin ingest "Structure this JSON data" - --output-agilink
+ "postgresql://user:pass@host/db"
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT  Natural language description of the data extraction   │
 │                        task                                                  │
@@ -492,18 +513,18 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                       Show this message and exit.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: datagin synthesize [OPTIONS] PROMPT SCHEMA                              
-                                                                                
- Generate synthetic data based on schema and prompt.                            
- Examples:                                                                      
- datagin synthesize "Generate 100 realistic customer records" schema.yaml       
- --output-agilink "sqlite:///customers.db" --rows 100                           
- datagin synthesize "Create 5 test orders" "agilink://path/to/schema"           
- --output-agilink "duckdb:///orders.db" -r 5                                    
- echo 'tables: users: columns: id: INTEGER name: TEXT' | datagin synthesize     
- "Make 2 users" - --output-agilink "sqlite:///:memory:" -r 2                    
-                                                                                
+
+ Usage: datagin synthesize [OPTIONS] PROMPT SCHEMA
+
+ Generate synthetic data based on schema and prompt.
+ Examples:
+ datagin synthesize "Generate 100 realistic customer records" schema.yaml
+ --output-agilink "sqlite:///customers.db" --rows 100
+ datagin synthesize "Create 5 test orders" "agilink://path/to/schema"
+ --output-agilink "duckdb:///orders.db" -r 5
+ echo 'tables: users: columns: id: INTEGER name: TEXT' | datagin synthesize
+ "Make 2 users" - --output-agilink "sqlite:///:memory:" -r 2
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt      TEXT  Natural language description of data to generate      │
 │                        [default: None]                                       │
@@ -530,18 +551,18 @@ Execute, validate, optimize, and interpret DAGs.
 │ --help                                       Show this message and exit.     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                
- Usage: datagin transform [OPTIONS] PROMPT INPUT OUTPUT_AGILINK                 
-                                                                                
- Transform structured data between schemas.                                     
- Examples:                                                                      
- datagin transform "Convert user data to new schema format" input_users.csv     
- "sqlite:///output.db"                                                          
- datagin transform "Merge product catalogs, standardizing categories"           
- ./product_data/ "duckdb:///merged_catalog.db"                                  
- export DATABASE_CONNECTION_STRING="postgresql://user:pass@host/db"             
- datagin transform "Anonymize customer PII fields" source_table "target_db_uri" 
-                                                                                
+
+ Usage: datagin transform [OPTIONS] PROMPT INPUT OUTPUT_AGILINK
+
+ Transform structured data between schemas.
+ Examples:
+ datagin transform "Convert user data to new schema format" input_users.csv
+ "sqlite:///output.db"
+ datagin transform "Merge product catalogs, standardizing categories"
+ ./product_data/ "duckdb:///merged_catalog.db"
+ export DATABASE_CONNECTION_STRING="postgresql://user:pass@host/db"
+ datagin transform "Anonymize customer PII fields" source_table "target_db_uri"
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    prompt              TEXT  Natural language description of the           │
 │                                transformation                                │
